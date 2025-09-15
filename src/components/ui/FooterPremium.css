@@ -1,0 +1,39 @@
+/* Premium Gradient Footer Styles */
+
+.premium-footer {
+    border-top-left-radius: 2.5rem;
+    border-top-right-radius: 2.5rem;
+    background: #0a0014;
+    box-shadow: 0 -8px 40px 0 rgba(139, 92, 246, 0.18), 0 -2px 8px 0 rgba(162, 89, 255, 0.10);
+    border-top: 2px solid #a259ff;
+    position: relative;
+    overflow: hidden;
+}
+
+
+.premium-footer-texture {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    opacity: 0.16;
+    background-image: url('data:image/svg+xml;utf8,<svg width="100%25" height="100%25" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%23a259ff" stop-opacity="0.10"/><stop offset="1" stop-color="%23000" stop-opacity="0.04"/></linearGradient></defs><rect width="100%25" height="100%25" fill="url(%23g)"/><g opacity="0.18"><circle cx="60" cy="40" r="32" fill="%23a259ff"/><circle cx="180" cy="90" r="24" fill="%23fff"/><circle cx="90" cy="120" r="18" fill="%23000"/></g></svg>');
+    background-size: cover;
+    z-index: 0;
+}
+
+
+.premium-footer-outline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #a259ff 0%, #6a00ff 60%, #a259ff 100%);
+    border-top-left-radius: 2.5rem;
+    border-top-right-radius: 2.5rem;
+    box-shadow: 0 2px 12px 0 #a259ff44;
+    z-index: 2;
+}

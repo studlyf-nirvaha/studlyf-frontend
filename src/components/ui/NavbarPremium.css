@@ -1,0 +1,50 @@
+/* Premium Navbar Oval Styles */
+
+.premium-navbar-oval {
+    border-radius: 999px;
+    border: 1.2px solid #a259ff;
+    background: #000;
+    box-shadow: 0 2px 16px 0 #a259ff22, 0 1.5px 6px 0 #0008;
+    backdrop-filter: blur(16px);
+    transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+
+.premium-navbar-oval .premium-navbar-btn {
+    background: #000;
+    border-radius: 999px;
+    color: #fff;
+    border: none;
+    position: relative;
+    transition: background 0.2s, color 0.2s;
+    backdrop-filter: blur(6px);
+    overflow: hidden;
+}
+
+
+.premium-navbar-oval .premium-navbar-btn::after {
+    content: "";
+    position: absolute;
+    left: 28%;
+    right: 28%;
+    bottom: 8px;
+    height: 1.5px;
+    background: linear-gradient(90deg, #d400ff 0%, #a259ff 100%);
+    box-shadow: 0 0 8px 2px #d400ff99;
+    border-radius: 2px;
+    transform: scaleX(0);
+    transition: transform 0.35s cubic-bezier(.4, 2, .3, 1);
+    z-index: 2;
+}
+
+.premium-navbar-oval .premium-navbar-btn.active::after,
+.premium-navbar-oval .premium-navbar-btn:hover::after {
+    transform: scaleX(1);
+}
+
+
+.premium-navbar-oval .premium-navbar-btn:hover,
+.premium-navbar-oval .premium-navbar-btn.active {
+    background: #000;
+    color: #fff;
+}
