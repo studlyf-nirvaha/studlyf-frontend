@@ -7,8 +7,8 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_BASE_URL;
   }
 
-  // In production, use the Vercel backend
-  return 'https://studlyf-backendfinal.vercel.app';
+  // Use Flask backend for all API calls
+  return 'http://localhost:5001';
 };
 
 const API_BASE_URL = getApiBaseUrl();

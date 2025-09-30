@@ -157,9 +157,16 @@ export const CardCarousel: React.FC<CarouselProps> = ({
                   loading="lazy"
                   onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_IMAGE; }}
                 />
-                <h3 className="text-xl font-bold text-white mb-2">{image.card.title}</h3>
-                <p className="text-white/80 mb-4">{image.card.summary}</p>
-                <a href={image.card.link} className="text-brand-purple font-semibold hover:underline mt-auto">Read More</a>
+                <div className="flex flex-col h-full justify-between p-4">
+                  <h3 className="text-lg font-semibold mb-2">{image.card.title}</h3>
+                  <p className="text-gray-300 mb-4">{image.card.summary}</p>
+                  <a
+                    href={image.card.link}
+                    className="text-purple-400 font-semibold hover:underline mt-auto"
+                  >
+                    Read More
+                  </a>
+                </div>
               </div>
             ) : (
               <div className="size-full rounded-3xl relative group overflow-hidden">
@@ -179,6 +186,27 @@ export const CardCarousel: React.FC<CarouselProps> = ({
         ))}
         {/* Navigation Arrows removed as requested */}
       </Swiper>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-8">
+        {images.map((card, idx) => (
+          <div key={idx} className="bg-white/10 rounded-xl shadow-lg overflow-hidden flex flex-col p-4">
+            <img
+              src={card.src}
+              alt={card.alt}
+              className="w-full h-48 object-cover mb-4"
+            />
+            <h3 className="text-lg font-semibold mb-2 text-white">{card.card?.title}</h3>
+            <p className="text-gray-300 mb-4">{card.card?.summary}</p>
+            <a
+              href={card.card?.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-400 font-semibold hover:underline mt-auto"
+            >
+              Read More
+            </a>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
