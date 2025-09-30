@@ -195,7 +195,7 @@ export default function StudentProfileDashboard() {
       isOnline: true,
       completedProfile: true
     };
-    try {
+    try {2
       const result = await updateUserProfile(user.uid, data);
       if (result.success) {
         // Refetch profile after successful save
@@ -295,13 +295,13 @@ export default function StudentProfileDashboard() {
   if (!user) return <div className="text-white p-8">Please log in.</div>;
 
   return (
-    <div className="relative min-h-screen w-full font-sans overflow-x-hidden bg-black">
+    <div className="relative min-h-screen w-full font-sans overflow-x-hidden" style={{ backgroundColor: '#1a1a1a' }}>
       {/* Animated Gradient Background */}
       <div className="fixed inset-0 -z-10 pointer-events-none" />
       {/* Responsive Dashboard Heading Bar */}
-      <div className="w-full border-b border-[#a259ff] bg-black/90 backdrop-blur-xl rounded-b-3xl shadow-xl mb-6 relative">
+      <div className="w-full border-b border-[#F4D03F] backdrop-blur-xl rounded-b-3xl shadow-xl mb-6 relative" style={{ backgroundColor: '#2d2d2d' }}>
         <div className="flex flex-wrap items-center justify-between px-4 sm:px-10 pt-3 pb-3 w-full gap-y-2">
-          <span className="text-2xl sm:text-5xl font-extrabold text-white tracking-wide uppercase text-center flex-1">DASHBOARD</span>
+          <span className="text-2xl sm:text-5xl font-extrabold tracking-wide uppercase text-center flex-1" style={{ color: '#F4D03F' }}>DASHBOARD</span>
           <div className="flex gap-2 sm:gap-3 flex-shrink-0">
             <button
               className="bg-[#a259ff] hover:bg-[#ff7eb3] text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-full shadow-lg transition-all duration-200 text-base sm:text-xl"
@@ -330,11 +330,11 @@ export default function StudentProfileDashboard() {
       </div>
       {/* Main Dashboard Section */}
       <section className="w-full min-h-[90vh] px-0 sm:px-4 pt-8">
-        <div className="rounded-3xl bg-black backdrop-blur-xl shadow-[0_0_32px_4px_#a259ff55] border border-white p-2 sm:p-4 md:p-6 mx-0 w-full">
+        <div className="rounded-3xl backdrop-blur-xl shadow-[0_0_32px_4px_#F4D03F55] border p-2 sm:p-4 md:p-6 mx-0 w-full" style={{ backgroundColor: '#2d2d2d', borderColor: '#F4D03F' }}>
           {/* Profile Card */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 bg-gradient-to-br from-black via-[#23272f] to-[#2d1a4a] rounded-2xl shadow-2xl p-4 sm:p-8 md:p-10 mb-6 sm:mb-10 border border-[#a259ff] hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-[#a259ff] hover:outline-[#ff7eb3] hover:shadow-[0_0_24px_4px_#a259ff99,0_0_48px_8px_#ff7eb399] backdrop-blur-2xl w-full">
+          <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 rounded-2xl shadow-2xl p-4 sm:p-8 md:p-10 mb-6 sm:mb-10 transition-all duration-300 backdrop-blur-2xl w-full" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
             <div className="relative">
-              <img src={profile?.profilePicture || 'https://placehold.co/120x120/A855F7/FFFFFF?text=User'} alt="Profile" className="h-24 w-24 rounded-full border-4 border-[#a259ff] bg-[#23272f] object-cover shadow-2xl" />
+              <img src={profile?.profilePicture || 'https://placehold.co/120x120/A855F7/FFFFFF?text=User'} alt="Profile" className="h-24 w-24 rounded-full border-4 object-cover shadow-2xl" style={{ borderColor: '#F4D03F', backgroundColor: '#2d2d2d' }} />
               {/* Removed year badge */}
             </div>
             <div className="flex-1 flex flex-col gap-2 items-center lg:items-start w-full max-w-2xl justify-start">
@@ -344,7 +344,7 @@ export default function StudentProfileDashboard() {
                     ? `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
                     : (profile?.name || user.displayName || 'No Name')
                 }
-                className="text-xl font-extrabold bg-gradient-to-r from-brand-purple via-brand-pink to-white bg-clip-text text-transparent drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] tracking-wide text-left"
+                className="text-xl font-extrabold tracking-wide text-left text-[#F4D03F]"
                 delay={80}
                 animationFrom={{ opacity: 0, transform: 'translate3d(0, 30px, 0)' }}
                 animationTo={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
@@ -353,7 +353,7 @@ export default function StudentProfileDashboard() {
                 rootMargin="-100px"
                 textAlign="left"
               />
-              <span className="text-sm text-white font-extrabold drop-shadow-[0_0_4px_#fff,0_0_8px_#a259ff] w-full text-left">{profile?.email || user.email}</span>
+              <span className="text-sm font-extrabold w-full text-left" style={{ color: '#ffffff' }}>{profile?.email || user.email}</span>
               <div className="flex flex-row flex-wrap gap-3 mt-2 items-center w-full justify-start">
                 {profile?.city && (
                   <span className="bg-black text-white px-3 py-1 rounded-full text-base font-extrabold shadow drop-shadow-[0_0_2px_#fff,0_0_4px_#a259ff]">{profile?.city}</span>
@@ -367,7 +367,7 @@ export default function StudentProfileDashboard() {
               </div>
               {profile?.bio && (
                 <div className="mt-2 w-full">
-                  <p className="text-white font-semibold bg-[#23272f]/80 rounded-xl px-3 py-2 border border-[#a259ff]/40 shadow-inner text-base text-left w-full">
+                  <p className="font-semibold rounded-xl px-3 py-2 shadow-inner text-base text-left w-full" style={{ color: '#ffffff', backgroundColor: '#2d2d2d80', border: '1px solid #F4D03F40' }}>
                     {profile.bio || 'This is a temporary bio. Update your profile to add your own bio!'}
                   </p>
                 </div>
@@ -381,8 +381,8 @@ export default function StudentProfileDashboard() {
           {/* Responsive Info Grid - 3 columns on xl, 2 on md, 1 on mobile */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mt-2">
             {/* Contact & Social */}
-            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 flex flex-col items-center border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
-              <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Contact & Social</h3>
+            <div className="rounded-2xl shadow-md p-3 flex flex-col items-center transition-all duration-300" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
+              <h3 className="text-lg sm:text-xl font-extrabold mb-2 flex items-center gap-2" style={{ color: '#F4D03F' }}>Contact & Social</h3>
               <div className="w-full flex justify-center my-3">
                 <div className="h-[1.5px] w-2/3 bg-gradient-to-r from-[#a259ff] via-[#ff7eb3] to-white rounded-full" />
               </div>
@@ -438,65 +438,65 @@ export default function StudentProfileDashboard() {
               </div>
             </div>
             {/* Education */}
-            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
-              <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Education</h3>
-              <div className="mb-1 text-white/90 flex items-center gap-2"><GraduationCap className="w-4 h-4 text-[#a259ff]" /><span className="font-semibold text-sm">Branch:</span> {profile?.branch}</div>
-              <div className="mb-1 text-white/90 flex items-center gap-2"><Calendar className="w-4 h-4 text-[#a259ff]" /><span className="font-semibold text-sm">Year:</span> {profile?.year}</div>
-              <div className="mb-1 text-white/90 flex items-center gap-2"><School className="w-4 h-4 text-[#a259ff]" /><span className="font-semibold text-sm">University:</span> {profile?.university || profile?.college}</div>
+            <div className="rounded-2xl shadow-md p-3 transition-all duration-300" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
+              <h3 className="text-lg sm:text-xl font-extrabold mb-2 flex items-center gap-2" style={{ color: '#F4D03F' }}>Education</h3>
+              <div className="mb-1 flex items-center gap-2" style={{ color: '#ffffff' }}><GraduationCap className="w-4 h-4" style={{ color: '#F4D03F' }} /><span className="font-semibold text-sm">Branch:</span> {profile?.branch}</div>
+              <div className="mb-1 flex items-center gap-2" style={{ color: '#ffffff' }}><Calendar className="w-4 h-4" style={{ color: '#F4D03F' }} /><span className="font-semibold text-sm">Year:</span> {profile?.year}</div>
+              <div className="mb-1 flex items-center gap-2" style={{ color: '#ffffff' }}><School className="w-4 h-4" style={{ color: '#F4D03F' }} /><span className="font-semibold text-sm">University:</span> {profile?.university || profile?.college}</div>
             </div>
             {/* Skills */}
-            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
-              <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Skills</h3>
+            <div className="rounded-2xl shadow-md p-3 transition-all duration-300" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
+              <h3 className="text-lg sm:text-xl font-extrabold mb-2 flex items-center gap-2" style={{ color: '#F4D03F' }}>Skills</h3>
               {Array.isArray(profile?.skills) && profile.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2 mt-1">
                   {profile.skills.map((skill, idx) => (
-                    <span key={idx} className="bg-[#ff7eb3]/20 text-[#ff7eb3] px-3 py-1 rounded-full text-base font-semibold border border-[#ff7eb3]/40 shadow-sm">{skill}</span>
+                    <span key={idx} className="px-3 py-1 rounded-full text-base font-semibold shadow-sm" style={{ backgroundColor: '#F4D03F20', color: '#F4D03F', border: '1px solid #F4D03F40' }}>{skill}</span>
                   ))}
                 </div>
-              ) : <span className="text-white/60 text-sm">None</span>}
+              ) : <span className="text-sm" style={{ color: '#ffffff60' }}>None</span>}
             </div>
             {/* Projects */}
-            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
-              <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Projects</h3>
+            <div className="rounded-2xl shadow-md p-3 transition-all duration-300" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
+              <h3 className="text-lg sm:text-xl font-extrabold mb-2 flex items-center gap-2" style={{ color: '#F4D03F' }}>Projects</h3>
               {Array.isArray(profile?.projectFiles) && profile.projectFiles.length > 0 ? (
                 <ul className="space-y-1">
                   {profile.projectFiles.map((file, idx) => (
                     <li key={idx} className="flex items-center gap-1">
-                      <FileText className="w-4 h-4 text-[#ff7eb3]" />
-                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-white/90 underline text-base">{file.name || file}</a>
+                      <FileText className="w-4 h-4" style={{ color: '#F4D03F' }} />
+                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="underline text-base" style={{ color: '#ffffff90' }}>{file.name || file}</a>
                     </li>
                   ))}
                 </ul>
-              ) : <span className="text-white/60 text-sm">No projects uploaded.</span>}
+              ) : <span className="text-sm" style={{ color: '#ffffff60' }}>No projects uploaded.</span>}
             </div>
             {/* Certifications */}
-            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
-              <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Certifications</h3>
+            <div className="rounded-2xl shadow-md p-3 transition-all duration-300" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
+              <h3 className="text-lg sm:text-xl font-extrabold mb-2 flex items-center gap-2" style={{ color: '#F4D03F' }}>Certifications</h3>
               {Array.isArray(profile?.certificationFiles) && profile.certificationFiles.length > 0 ? (
                 <ul className="space-y-1">
                   {profile.certificationFiles.map((file, idx) => (
                     <li key={idx} className="flex items-center gap-1">
-                      <Award className="w-4 h-4 text-[#ff7eb3]" />
-                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-white/90 underline text-base">{file.name || file}</a>
+                      <Award className="w-4 h-4" style={{ color: '#F4D03F' }} />
+                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="underline text-base" style={{ color: '#ffffff90' }}>{file.name || file}</a>
                     </li>
                   ))}
                 </ul>
-              ) : <span className="text-white/60 text-sm">No certifications uploaded.</span>}
+              ) : <span className="text-sm" style={{ color: '#ffffff60' }}>No certifications uploaded.</span>}
             </div>
             {/* Resume */}
             {/* Profile & Preferences */}
-            <div className="rounded-2xl bg-[#18181b] shadow-2xl p-6 w-full border-2 border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-4 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_24px_4px_#a259ff99,0_0_48px_8px_#ff7eb399] xl:col-span-3">
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-4 flex items-center gap-2">Profile & Preferences</h3>
+            <div className="rounded-2xl shadow-2xl p-6 w-full transition-all duration-300 xl:col-span-3" style={{ backgroundColor: '#3a3a3a', border: '2px solid #F4D03F' }}>
+              <h3 className="text-xl sm:text-2xl font-extrabold mb-4 flex items-center gap-2" style={{ color: '#F4D03F' }}>Profile & Preferences</h3>
               <div className="flex flex-col gap-4 w-full">
                 <div className="w-full">
-                  <span className="flex items-center gap-2 font-semibold text-lg text-white mb-1"><FileText className="w-6 h-6 text-[#a259ff]" /> Bio:</span>
-                  <p className="text-white font-semibold bg-[#23272f]/80 rounded-xl px-4 py-3 border border-[#a259ff]/40 shadow-inner text-base text-left w-full">
+                  <span className="flex items-center gap-2 font-semibold text-lg mb-1" style={{ color: '#ffffff' }}><FileText className="w-6 h-6" style={{ color: '#F4D03F' }} /> Bio:</span>
+                  <p className="font-semibold rounded-xl px-4 py-3 shadow-inner text-base text-left w-full" style={{ color: '#ffffff', backgroundColor: '#2d2d2d80', border: '1px solid #F4D03F40' }}>
                     {profile?.bio || 'This is a temporary bio. Update your profile to add your own bio!'}
                   </p>
                 </div>
                 <div className="w-full">
-                  <span className="flex items-center gap-2 font-semibold text-lg text-white mb-1"><Target className="w-6 h-6 text-[#ff7eb3]" /> Career Goals:</span>
-                  <p className="text-white font-semibold bg-[#23272f]/80 rounded-xl px-4 py-3 border border-[#ff7eb3]/40 shadow-inner text-base text-left w-full">
+                  <span className="flex items-center gap-2 font-semibold text-lg mb-1" style={{ color: '#ffffff' }}><Target className="w-6 h-6" style={{ color: '#F4D03F' }} /> Career Goals:</span>
+                  <p className="font-semibold rounded-xl px-4 py-3 shadow-inner text-base text-left w-full" style={{ color: '#ffffff', backgroundColor: '#2d2d2d80', border: '1px solid #F4D03F40' }}>
                     {profile?.careerGoals || 'No career goals set.'}
                   </p>
                 </div>

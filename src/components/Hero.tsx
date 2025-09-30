@@ -1,211 +1,147 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, TrendingUp } from "lucide-react";
-import { SplitText } from "@/components/ui/split-text";
-import Lenis from 'lenis';
+import { Users, Briefcase, TrendingUp } from "lucide-react";
 
 const Hero = () => {
   const [mounted, setMounted] = useState(false);
-  const [colorFill, setColorFill] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Lenis smooth scroll for this section only (if not already global)
-    const lenis = new Lenis({
-      duration: 1.2,
-      touchMultiplier: 2,
-      infinite: false,
-    });
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-    return () => {
-      lenis.destroy();
-    };
   }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.3,
-        delayChildren: 0.2
-      }
-    }
+      transition: { staggerChildren: 0.3, delayChildren: 0.2 },
+    },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 }
-    }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-3 sm:px-4 pt-20 sm:pt-24 md:pt-20 w-full overflow-x-hidden">
-      {/* Moon-like glowing oval at the bottom center */}
+    <div className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 bg-gradient-to-b from-[#0a0a1a] to-[#1c0030] overflow-hidden">
+      {/* Background Glow */}
       <motion.div
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-0 z-0"
-        initial={{
-          scale: 1,
-          opacity: 0.7,
-          filter: 'blur(32px)'
-        }}
-        animate={{
-          scale: [1, 1.04, 1],
-          opacity: [0.7, 0.95, 0.7],
-          filter: [
-            'blur(32px)',
-            'blur(40px)',
-            'blur(32px)'
-          ]
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          repeatType: 'reverse',
-          ease: 'easeInOut'
-        }}
-        style={{
-          width: '90vw',
-          height: '38vw',
-          minWidth: 500,
-          minHeight: 320,
-          maxWidth: 1200,
-          maxHeight: 600,
-          background: 'radial-gradient(ellipse 60% 80% at 50% 100%, rgba(255,255,255,0.18) 0%, rgba(168,85,247,0.22) 40%, rgba(139,92,246,0.13) 70%, rgba(17,24,39,0.01) 100%)',
-          boxShadow: '0 0 120px 60px rgba(168,85,247,0.18), 0 0 240px 120px rgba(139,92,246,0.10)',
-          borderRadius: '50% / 38%',
-          opacity: 0.85,
-        }}
-        aria-hidden="true"
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-purple-600 opacity-30 blur-[150px] z-0"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 6, repeat: Infinity, repeatType: "mirror" }}
       />
-      {/* Animated stars/dust particles for depth */}
-      <div className="pointer-events-none absolute inset-0 z-0">
-        {[...Array(22)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: Math.random() * 2 + 1,
-              height: Math.random() * 2 + 1,
-              top: `${Math.random() * 70 + 10}%`,
-              left: `${Math.random() * 90}%`,
-              opacity: Math.random() * 0.5 + 0.3,
-              filter: 'blur(0.5px)'
-            }}
-            animate={{
-              y: [0, Math.random() * 10 - 5, 0],
-              opacity: [0.3, 0.7, 0.3]
-            }}
-            transition={{
-              duration: Math.random() * 6 + 4,
-              repeat: Infinity,
-              repeatType: 'reverse',
-              delay: Math.random() * 4
-            }}
-          />
-        ))}
-      </div>
+
+      {/* Headline */}
       <motion.div
-        className="w-full max-w-6xl mx-auto text-center relative z-10"
+        className="relative z-10 max-w-3xl"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <motion.div variants={itemVariants}>
-          <SplitText
-            text="Guide Bazaar"
-            className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold mb-3 sm:mb-4 md:mb-6 leading-tight px-2 ${colorFill ? 'split-text-gradient' : ''}`}
-            delay={50}
-            animationFrom={{ opacity: 0, transform: 'translate3d(0, 30px, 0)' }}
-            animationTo={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
-            easing="easeOutCubic"
-            threshold={0.3}
-            rootMargin="-100px"
-            onLetterAnimationComplete={() => setTimeout(() => setColorFill(true), 200)}
-          />
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-2 sm:mb-3 md:mb-4 text-white font-medium px-3 sm:px-4">
-            Your Smart Student Companion{' '}
-            <motion.span
-              className="inline-block text-xl sm:text-2xl md:text-3xl lg:text-4xl filter drop-shadow-lg"
-              animate={{
-                rotate: [0, 10, -10, 0],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut"
-              }}
-            >
-              ✈️
-            </motion.span>
-          </p>
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl max-w-3xl mx-auto mb-6 sm:mb-8 md:mb-12 text-white/70 leading-relaxed px-3 sm:px-4">
-            Explore finance, join events, network with startups, and grow your future in one unified platform.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="flex justify-center items-center mb-8 sm:mb-12 md:mb-16 px-3 sm:px-4 w-full max-w-2xl mx-auto"
+        <motion.h1
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4"
           variants={itemVariants}
         >
+          Building <span className="text-purple-400">the</span>
+          <br />
+          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Student Internet
+          </span>
+        </motion.h1>
+
+        <motion.p
+          className="text-base sm:text-lg md:text-xl text-white/70 mb-8"
+          variants={itemVariants}
+        >
+          Empowering students with smarter study & balanced life.
+        </motion.p>
+
+        {/* CTA Buttons */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+          variants={itemVariants}
+        >
+          <Button className="px-6 py-3 rounded-full text-lg font-semibold bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition">
+            Join Now
+          </Button>
+          <Button
+            variant="outline"
+            className="px-6 py-3 rounded-full text-lg font-semibold border-purple-400 text-white hover:bg-purple-800/30 transition"
+          >
+            Explore Resources
+          </Button>
         </motion.div>
 
+        {/* Feature Cards */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto px-3 sm:px-4 w-full"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16"
           variants={itemVariants}
         >
           {[
-            { icon: TrendingUp, title: "Finance Tools", desc: "Smart financial planning and investment tracking" },
-            { icon: Users, title: "Events & Networking", desc: "Connect with peers and industry professionals" },
-            { icon: Users, title: "Startup Ecosystem", desc: "Discover opportunities and build your career" }
-          ].map((feature, index) => (
+            {
+              icon: TrendingUp,
+              title: "Finance",
+              desc: "Smart tools for student finance management",
+            },
+            {
+              icon: Users,
+              title: "Events",
+              desc: "Discover and join student events worldwide",
+            },
+            {
+              icon: Briefcase,
+              title: "Project Hunt",
+              desc: "Showcase projects and find collaborators",
+            },
+          ].map((feature) => (
             <motion.div
               key={feature.title}
-              className="p-4 md:p-6 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 hover:border-brand-purple/50 transition-all duration-300 group w-full"
-              whileHover={{ scale: 1.02, y: -5 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.3 }}
+              className="p-6 rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 hover:border-purple-400/50 transition-all group"
+              whileHover={{ scale: 1.03, y: -5 }}
             >
-              <feature.icon className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-brand-purple mx-auto mb-2 sm:mb-3 md:mb-4 group-hover:text-brand-pink transition-colors" />
-              <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-white">{feature.title}</h3>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed">{feature.desc}</p>
+              <feature.icon className="w-12 h-12 text-purple-400 mx-auto mb-4 group-hover:text-pink-400 transition" />
+              <h3 className="text-lg font-semibold text-white mb-2">
+                {feature.title}
+              </h3>
+              <p className="text-white/70 text-sm">{feature.desc}</p>
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Stats Section */}
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto text-white mb-16"
+          variants={itemVariants}
+        >
+          <div>
+            <h2 className="text-3xl font-bold">5000+</h2>
+            <p className="text-white/70">Students Connected</p>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold">200+</h2>
+            <p className="text-white/70">Projects Shared</p>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold">100+</h2>
+            <p className="text-white/70">Internships Offered</p>
+          </div>
+        </motion.div>
+
+        {/* Testimonials Section (placeholder) */}
+        <motion.div
+          className="bg-white/5 p-6 rounded-xl max-w-2xl mx-auto"
+          variants={itemVariants}
+        >
+          <p className="text-white/90 italic mb-3">
+            “Empowering students with smarter study & balanced life”
+          </p>
+          <p className="text-white/60">— Jane Doe, ABC College</p>
+        </motion.div>
       </motion.div>
-      <style>{`
-        .split-text-gradient span {
-          background: linear-gradient(90deg, #a259ff, #ff7eb3, #fff 80%);
-          background-clip: text;
-          -webkit-background-clip: text;
-          color: transparent;
-          -webkit-text-fill-color: transparent;
-          animation: fillColor 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
-        }
-        .split-text-gradient span {
-          opacity: 1;
-        }
-        @keyframes fillColor {
-          0% { filter: grayscale(1) brightness(0.7); }
-          100% { filter: grayscale(0) brightness(1); }
-        }
-      `}</style>
     </div>
   );
 };
 
 export default Hero;
+

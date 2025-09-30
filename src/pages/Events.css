@@ -1,0 +1,49 @@
+/* Background Gradient Animation */
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient {
+  animation: gradient 15s ease infinite;
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent;
+}
+
+/* Filter Bar */
+.filter-bar {
+  @apply backdrop-blur-lg bg-white/5 border border-white/10 shadow-inner rounded-xl;
+}
+
+/* Tags */
+.tag {
+  @apply px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition;
+}
+.tag-purple {
+  @apply bg-purple-500/20 text-purple-400 hover:bg-purple-500/30;
+}
+.tag-green {
+  @apply bg-green-500/20 text-green-400 hover:bg-green-500/30;
+}
+.tag-pink {
+  @apply bg-pink-500/20 text-pink-400 hover:bg-pink-500/30;
+}
+
+/* Join Button */
+.join-btn {
+  @apply relative inline-flex items-center justify-center px-6 py-2 rounded-full font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 overflow-hidden transition-transform hover:scale-105;
+}
+.join-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.join-btn:hover::after {
+  opacity: 1;
+}

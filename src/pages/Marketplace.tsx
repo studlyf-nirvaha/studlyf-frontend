@@ -1,412 +1,408 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Filter, MapPin, ShoppingCart, ZoomIn, Star, Tag, Clock, X, Clipboard, ArrowUpRight } from "lucide-react";
-import { SplitText } from "@/components/ui/split-text";
+import {
+  Plus,
+  Filter,
+  MapPin,
+  ShoppingCart,
+  Book,
+  FileText,
+  Tag,
+  Ticket,
+  Heart,
+  X,
+  Search,
+} from "lucide-react";
+
+const categoryIcons: Record<string, JSX.Element> = {
+  "All Categories": <Filter size={16} />,
+  Books: <Book size={16} />,
+  Notes: <FileText size={16} />,
+  Electronics: <ShoppingCart size={16} />,
+  Coupons: <Tag size={16} />,
+  "Event Tickets": <Ticket size={16} />,
+  Services: <Tag size={16} />,
+  Others: <Tag size={16} />,
+};
+
+const categories = [
+  "All Categories",
+  "Books",
+  "Notes",
+  "Electronics",
+  "Coupons",
+  "Event Tickets",
+  "Services",
+  "Others",
+];
+
+const conditions = ["New", "Like New", "Good", "Fair", "Poor"];
+
+const cardBlack = "#23232a"; // Medium shade of black for card
 
 const Marketplace = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [activeItem, setActiveItem] = useState<number | null>(null);
-  const [mounted, setMounted] = useState(false);
   const [showListingForm, setShowListingForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  const listings = [
+  // Listings as state
+  const [listings, setListings] = useState([
     {
       id: 1,
       title: "Skullcandy",
       category: "Electronics",
       price: "Upto 80% off",
-      image: "🎧",
+      image: "/headphones.png",
       condition: "New",
       location: "Online",
-      description: "Upto 80% off on Skullcandy headphones and accessories.",
-      listedOn: "Just now",
-      seller: "Official Store"
+      description:
+        "Upto 80% off on Skullcandy headphones and accessories.",
+      listedOn: "Official Store",
+      seller: "Official Store",
     },
     {
       id: 2,
       title: "Rise Beyond Limits",
       category: "Books",
       price: "Free Download",
-      image: <img src="/book1.png" alt="Rise Beyond Limits Cover" className="w-12 h-16 object-cover rounded shadow" />,
+      image: "/book1.png",
       condition: "New",
       location: "Online",
-      description: "'Rise Beyond Limits' is an inspiring book by E SAI ESHWAR that empowers readers to overcome obstacles and unlock their true potential. Dive into motivational stories and practical strategies for personal growth.",
-      listedOn: "Now",
+      description:
+        "'Rise Beyond Limits' is an inspiring book by E SAI ESHWAR that empowers readers to overcome obstacles and unlock their true potential. Dive into motivational stories and practical strategies for personal growth.",
+      listedOn: "E SAI ESHWAR",
       seller: "E SAI ESHWAR",
-      download: "/RISE BEYOND LIMITS.pdf"
-    }
-  ];
+      download: "/RISE BEYOND LIMITS.pdf",
+    },
+  ]);
 
-  const categories = [
-    "All Categories",
-    "Books",
-    "Notes",
-    "Electronics",
-    "Coupons",
-    "Event Tickets",
-    "Services",
-    "Others"
-  ];
+  useEffect(() => {
+    // For mount animation or future use
+  }, []);
 
-  const conditions = ["New", "Like New", "Good", "Fair", "Poor"];
+  // Filter by category and search term
+  const filteredListings = listings.filter((listing) => {
+    const matchesCategory =
+      selectedCategory === "All Categories" ||
+      listing.category === selectedCategory;
+    const matchesSearch =
+      listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      listing.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
-  const filteredListings = selectedCategory === "All Categories"
-    ? listings
-    : listings.filter(listing => listing.category === selectedCategory);
-
+  // Add new listing to state
   const handleCreateListing = (formData: any) => {
     setShowListingForm(false);
-    // Here you would typically send the data to your backend
-  };
-
-  const handleShare = (link: string) => {
-    navigator.clipboard.writeText(link);
-    alert("Link copied to clipboard!");
+    const newId = listings.length
+      ? Math.max(...listings.map((l) => l.id)) + 1
+      : 1;
+    const newListing = {
+      id: newId,
+      title: formData.title as string,
+      category: formData.category as string,
+      price: formData.price as string,
+      image: "/default.png",
+      condition: formData.condition as string,
+      location: formData.location as string,
+      description: formData.description as string,
+      listedOn: "Now",
+      seller: "You",
+    };
+    setListings([newListing, ...listings]);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-grid-white/[0.02] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-purple/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-purple/20 to-transparent" />
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-brand-purple/20 to-transparent" />
-        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-brand-purple/20 to-transparent" />
-
-        {/* Animated glow */}
-        <div className="absolute top-1/3 -left-40 w-96 h-96 bg-brand-purple rounded-full mix-blend-multiply filter blur-[128px] opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-1/3 -right-40 w-96 h-96 bg-brand-pink rounded-full mix-blend-multiply filter blur-[128px] opacity-30 animate-pulse animation-delay-2000"></div>
-      </div>
-
+    <div className="min-h-screen w-full bg-black">
       <Navbar />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="container mx-auto px-4 pt-24 pb-16"
-      >
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            <SplitText
-              text="Student Marketplace"
-              className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink"
-              delay={50}
-              animationFrom={{ opacity: 0, transform: 'translate3d(0, 30px, 0)' }}
-              animationTo={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
-              easing="easeOutCubic"
-              threshold={0.3}
-              rootMargin="-100px"
+      <main className="flex flex-col items-center min-h-[calc(100vh-120px)] px-2 md:px-0">
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.7 }}
+          className="w-full max-w-5xl rounded-3xl shadow-xl border border-white/10 mt-10 mb-8 pb-10 px-5 md:px-12 pt-10"
+          style={{
+            background: cardBlack,
+          }}
+        >
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:justify-between items-center mb-10 gap-6">
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text text-transparent">
+                Student Marketplace
+              </h1>
+              <p className="text-lg text-white/70 mt-2">
+                Buy, sell, and save on student essentials in our digital bazaar.
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowListingForm(true)}
+              className="gap-2 bg-blue-700 hover:bg-blue-600 text-white px-7 py-3 rounded-full text-lg font-semibold shadow-lg transition"
+            >
+              <Plus size={22} /> Post New Listing
+            </Button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="w-full max-w-md mx-auto mb-10 relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search for books, electronics, tickets..."
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-[#232A4D] text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              style={{ background: "#232A4D" }}
             />
-            <p className="text-xl text-white mb-10">
-              Buy, sell, and save on student essentials in our digital bazaar.
-            </p>
-          </motion.div>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400">
+              <Search size={20} />
+            </span>
+          </div>
 
           {/* Create Listing Modal */}
-          <AnimatePresence>
-            {showListingForm && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={() => setShowListingForm(false)}
+          {showListingForm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+              <div
+                className="bg-black border border-white/10 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto relative"
+                onClick={(e) => e.stopPropagation()}
               >
-                <motion.div
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.95, opacity: 0 }}
-                  className="bg-black border border-white/10 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  className="absolute top-2 right-2 text-white"
+                  onClick={() => setShowListingForm(false)}
+                  aria-label="Close"
                 >
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Create New Listing</h2>
-                    <Button variant="ghost" size="sm" onClick={() => setShowListingForm(false)}>
-                      <X size={20} />
-                    </Button>
-                  </div>
-
-                  <form onSubmit={(e) => {
+                  <X size={24} />
+                </button>
+                <h2 className="text-2xl font-bold mb-4 text-white">
+                  Create New Listing
+                </h2>
+                <form
+                  onSubmit={(e) => {
                     e.preventDefault();
-                    const formData = new FormData(e.target as HTMLFormElement);
+                    const formData = new FormData(
+                      e.target as HTMLFormElement
+                    );
                     handleCreateListing(Object.fromEntries(formData));
-                  }} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Item Title</label>
-                      <Input name="title" placeholder="What are you selling?" className="bg-white/5 border-white/10" required />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Category</label>
-                        <select name="category" className="w-full rounded-md bg-white/5 border-white/10 p-2 text-sm" required>
-                          {categories.filter(cat => cat !== "All Categories").map(category => (
-                            <option key={category} value={category}>{category}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Condition</label>
-                        <select name="condition" className="w-full rounded-md bg-white/5 border-white/10 p-2 text-sm" required>
-                          {conditions.map(condition => (
-                            <option key={condition} value={condition}>{condition}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Price (₹)</label>
-                        <Input name="price" type="number" placeholder="e.g. 500" className="bg-white/5 border-white/10" required />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Location</label>
-                        <Input name="location" placeholder="e.g. Campus, Online" className="bg-white/5 border-white/10" required />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Description</label>
-                      <Textarea name="description" placeholder="Describe your item in detail" className="bg-white/5 border-white/10" rows={3} required />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Upload Image (optional)</label>
-                      <div className="border border-dashed border-white/20 rounded-md p-8 text-center hover:bg-white/5 cursor-pointer transition-colors">
-                        <Plus size={24} className="mx-auto mb-2 text-white/50" />
-                        <p className="text-sm text-white">Click to upload or drag and drop</p>
-                        <p className="text-xs text-white mt-1">PNG, JPG or WEBP (max. 5MB)</p>
-                        <input type="file" name="image" className="hidden" accept="image/*" />
-                      </div>
-                    </div>
-
-                    <Button type="submit" className="w-full bg-gradient-to-r from-brand-purple to-brand-pink">
-                      Create Listing
-                    </Button>
-                  </form>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar */}
-            <motion.div
-              className="w-full md:w-64 flex-shrink-0"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <div className="sticky top-24 space-y-6">
-                {/* Create Listing Button */}
-                <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                  <Button
-                    onClick={() => setShowListingForm(true)}
-                    className="w-full gap-2 bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-opacity py-6 relative overflow-hidden group"
-                  >
-                    <Plus size={18} className="absolute left-4 group-hover:translate-x-1 transition-transform" />
-                    <span className="ml-4">Post New Listing</span>
-                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Button>
-                </motion.div>
-
-                {/* Categories Filter */}
-                <motion.div
-                  className="rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 p-5 hover:border-brand-purple/30 transition-all duration-300"
-                  whileHover={{ boxShadow: "0 0 20px rgba(142, 68, 173, 0.2)" }}
+                  }}
+                  className="space-y-4"
                 >
-                  <h3 className="font-medium mb-4 flex items-center gap-2">
-                    <Filter size={18} className="text-brand-purple" />
-                    Categories
-                  </h3>
-                  <div className="space-y-2">
-                    {categories.map((category) => (
-                      <motion.button
-                        key={category}
-                        className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all duration-300 ${category === selectedCategory
-                          ? "bg-gradient-to-r from-brand-purple/90 to-brand-pink/90 text-white"
-                          : "bg-black/60 text-white/80"
-                          }`}
-                        whileHover={{ x: 3 }}
-                        onClick={() => setSelectedCategory(category)}
-                      >
-                        {category}
-                      </motion.button>
-                    ))}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-white">
+                      Item Title
+                    </label>
+                    <Input
+                      name="title"
+                      placeholder="What are you selling?"
+                      className="bg-black border-white/10 text-white placeholder:text-white/40"
+                      required
+                    />
                   </div>
-                </motion.div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-white">
+                        Category
+                      </label>
+                      <select
+                        name="category"
+                        className="w-full rounded-md bg-black border-white/10 p-2 text-sm text-white"
+                        required
+                      >
+                        {categories
+                          .filter((cat) => cat !== "All Categories")
+                          .map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-white">
+                        Condition
+                      </label>
+                      <select
+                        name="condition"
+                        className="w-full rounded-md bg-black border-white/10 p-2 text-sm text-white"
+                        required
+                      >
+                        {conditions.map((condition) => (
+                          <option key={condition} value={condition}>
+                            {condition}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-white">
+                        Price (₹)
+                      </label>
+                      <Input
+                        name="price"
+                        type="text"
+                        placeholder="e.g. 500"
+                        className="bg-black border-white/10 text-white placeholder:text-white/40"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-white">
+                        Location
+                      </label>
+                      <Input
+                        name="location"
+                        placeholder="e.g. Campus, Online"
+                        className="bg-black border-white/10 text-white placeholder:text-white/40"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-white">
+                      Description
+                    </label>
+                    <Textarea
+                      name="description"
+                      placeholder="Describe your item in detail"
+                      className="bg-black border-white/10 text-white placeholder:text-white/40"
+                      rows={3}
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-700 hover:bg-blue-600 text-white font-semibold"
+                  >
+                    Create Listing
+                  </Button>
+                </form>
               </div>
-            </motion.div>
+            </div>
+          )}
 
-            {/* Main Content */}
-            <div className="flex-grow">
-              {/* Search Bar */}
-              <motion.div
-                className="relative mb-8 group"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-white/50 group-hover:text-brand-purple transition-colors duration-300" />
-                </div>
-                <Input
-                  placeholder="Search for books, electronics, tickets..."
-                  className="pl-10 py-6 bg-white/5 border-white/10 hover:border-brand-purple/50 focus:border-brand-purple/50 transition-all duration-300"
-                />
-                <div className="absolute inset-0 -z-10 blur-md bg-gradient-to-r from-brand-purple/5 to-brand-pink/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
-              </motion.div>
-
-              {/* Listings */}
-              <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: {},
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.1
-                    }
+          {/* Categories */}
+          <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-12">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-medium text-base shadow transition-all duration-200 border
+                  ${
+                    selectedCategory === category
+                      ? "bg-blue-700 text-white border-transparent shadow-lg"
+                      : "bg-[#23232a] text-white/80 border-transparent hover:border-blue-400"
                   }
+                `}
+                onClick={() => setSelectedCategory(category)}
+              >
+                {categoryIcons[category]}
+                {category}
+              </button>
+            ))}
+          </div>
+
+          {/* Listings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {filteredListings.map((listing) => (
+              <motion.div
+                key={listing.id}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0 6px 40px 0 rgba(50,90,255,0.16)",
+                }}
+                className="rounded-2xl shadow-2xl border border-white/10 p-7 flex flex-col md:flex-row items-center gap-6 relative transition"
+                style={{
+                  background: cardBlack,
                 }}
               >
-                {filteredListings.map((listing, index) => (
-                  <motion.div
-                    key={listing.id}
-                    variants={{
-                      hidden: { opacity: 0, y: 20 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-                    }}
-                    whileHover={{
-                      scale: 1.02,
-                      boxShadow: "0 0 25px rgba(142, 68, 173, 0.25)"
-                    }}
-                    className="rounded-xl bg-white/5 backdrop-blur-lg border border-white/10 p-5 hover:border-brand-purple/50 transition-all duration-300 rounded-2xl"
-                    onClick={() => setActiveItem(activeItem === listing.id ? null : listing.id)}
-                  >
-                    <div className="flex gap-4">
-                      {/* Image/Emoji Placeholder */}
-                      <div className="relative flex-shrink-0 w-16 h-16 group cursor-pointer">
-                        <div className="absolute inset-0 bg-gradient-to-r from-brand-purple/40 to-brand-pink/40 rounded-lg blur opacity-50 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div className="relative w-16 h-16 rounded-lg bg-white/10 flex items-center justify-center text-3xl overflow-hidden group">
-                          {listing.image}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ZoomIn className="w-6 h-6 text-white" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex-grow">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium line-clamp-1">{listing.title}</h3>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <Badge className="bg-[#a259ff]/20 text-[#a259ff] hover:bg-[#a259ff]/30">{listing.category}</Badge>
-                              <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/20">{listing.condition}</Badge>
-                            </div>
-                            <div className="flex items-center mt-2 text-sm text-white">
-                              <MapPin size={14} className="mr-1 text-brand-pink" />
-                              {listing.location}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-lg bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink">{listing.price}</p>
-                          </div>
-                        </div>
-
-                        <AnimatePresence>
-                          {activeItem === listing.id && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.3 }}
-                              className="mt-3 overflow-hidden"
-                            >
-                              <p className="text-sm text-white mb-3">
-                                {listing.description}
-                              </p>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        <div className="flex justify-between items-center mt-3">
-                          <span className="text-xs text-white flex items-center">
-                            <Clock size={12} className="mr-1" />
-                            {listing.listedOn} by {listing.seller}
-                          </span>
-                          <div className="flex gap-2">
-                            {listing.category === "Books" && listing.download ? (
-                              <>
-                                <a
-                                  href={listing.download}
-                                  download
-                                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium h-9 rounded-full px-3 bg-brand-purple text-white border-0 shadow-[0_4px_20px_0_rgba(162,89,255,0.10)] hover:bg-brand-pink transition-colors"
-                                  onClick={e => e.stopPropagation()}
-                                >
-                                  Download PDF
-                                </a>
-                                <button
-                                  onClick={() => handleShare(`${window.location.origin}${listing.download}`)}
-                                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium h-9 rounded-full px-3 bg-white text-brand-purple border-0 shadow-[0_4px_20px_0_rgba(162,89,255,0.10)] hover:bg-brand-purple/10 transition-colors"
-                                >
-                                  <ArrowUpRight size={16} />
-                                </button>
-                              </>
-                            ) : null}
-                            {listing.category !== "Books" && (
-                              <a
-                                href="https://wa.me/9182591431?text=Hi%2C%20I%20am%20interested%20in%20buying%20the%20Skullcandy%20product%20listed%20on%20StudLYF%20Marketplace."
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium h-9 rounded-full px-3 bg-white text-[#a259ff] border-0 shadow-[0_4px_20px_0_rgba(162,89,255,0.10)]"
-                                onClick={e => e.stopPropagation()}
-                              >
-                                Contact
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-
-                {filteredListings.length === 0 && (
-                  <motion.div
-                    className="col-span-2 text-center py-16"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <div className="text-6xl mb-4">🔍</div>
-                    <h3 className="text-xl font-semibold mb-2">No listings found</h3>
-                    <p className="text-white">Try adjusting your filters or search criteria</p>
-                  </motion.div>
-                )}
+                {/* Image */}
+                <div className="w-24 h-24 flex items-center justify-center bg-[#23232a] rounded-full shadow-lg border border-blue-600/20 overflow-hidden">
+                  {typeof listing.image === "string" ? (
+                    <img
+                      src={listing.image}
+                      alt={listing.title}
+                      className="w-16 h-16 object-contain"
+                    />
+                  ) : (
+                    listing.image
+                  )}
+                </div>
+                {/* Listing Info */}
+                <div className="flex-1 w-full md:w-auto mt-5 md:mt-0">
+                  <div className="flex items-center justify-between w-full">
+                    <h2 className="text-2xl font-semibold text-white">
+                      {listing.title}
+                    </h2>
+                    <span className="font-bold text-lg text-blue-400">
+                      {listing.price}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 mt-2 mb-1">
+                    <span className="px-3 py-1 rounded-full bg-blue-900 text-blue-200 text-xs font-semibold">
+                      {listing.category}
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-[#23232a] text-white/80 text-xs">
+                      {listing.condition}
+                    </span>
+                  </div>
+                  <div className="text-white/60 text-sm flex items-center gap-2 mb-1">
+                    <MapPin size={14} /> {listing.location}
+                  </div>
+                  <div className="text-white/40 text-xs mb-2">
+                    {listing.listedOn}
+                  </div>
+                  {/* CTA */}
+                  <div className="flex items-center gap-3 mt-3">
+                    {listing.category === "Books" && listing.download ? (
+                      <a
+                        href={listing.download}
+                        download
+                        className="bg-blue-600 hover:bg-blue-700 transition-colors px-6 py-2 rounded-full font-bold text-white text-base shadow"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Download
+                      </a>
+                    ) : (
+                      <a
+                        href="https://wa.me/9182591431?text=Hi%2C%20I%20am%20interested%20in%20buying%20the%20Skullcandy%20product%20listed%20on%20StudLYF%20Marketplace."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-blue-700 hover:bg-blue-600 transition-colors px-6 py-2 rounded-full font-bold text-white text-base shadow"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Buy Now
+                      </a>
+                    )}
+                    {listing.category === "Books" && (
+                      <button
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-900 text-blue-200 hover:bg-blue-800 transition-colors shadow"
+                        title="Favorite"
+                      >
+                        <Heart size={20} />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </motion.div>
-            </div>
+            ))}
+            {filteredListings.length === 0 && (
+              <div className="col-span-2 text-center py-16">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-semibold mb-2 text-white">
+                  No listings found
+                </h3>
+                <p className="text-white/70">
+                  Try adjusting your filters or search criteria
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-      </motion.div>
+        </motion.section>
+      </main>
       <Footer />
     </div>
   );

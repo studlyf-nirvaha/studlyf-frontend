@@ -19,10 +19,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { SplitText } from "@/components/ui/split-text";
 import Spline from '@splinetool/react-spline';
 import EventCarousel from "@/components/EventCarousel";
+import WhystudlyfImg from "../Whystudlyf.jpeg";
 
 const Events = () => {
   const [city, setCity] = useState<string>("all");
   const [eventType, setEventType] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeChips, setActiveChips] = useState<string[]>([]);
+  const [advancedOpen, setAdvancedOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
   const [activeEvent, setActiveEvent] = useState<number | null>(null);
   const [showHostForm, setShowHostForm] = useState(false);
@@ -108,12 +112,34 @@ const Events = () => {
   // Filter out events whose last registration date has passed (today > lastRegistrationDate)
   const today = new Date();
   const filteredEvents = allEvents.filter(event => {
-    // If no lastRegistrationDate, keep the event (for default events)
-    if (!event.lastRegistrationDate) return true;
-    // Compare dates (ignore time)
-    const regDate = new Date(event.lastRegistrationDate);
-    regDate.setHours(23, 59, 59, 999); // include the whole day
-    return today <= regDate && (city === "all" || event.location === city || (city === "online" && event.location === "Online")) && (eventType === "all" || event.type === eventType);
+    // Filter out by registration date if present
+    if (event.lastRegistrationDate) {
+      const regDate = new Date(event.lastRegistrationDate);
+      regDate.setHours(23, 59, 59, 999);
+      if (today > regDate) return false;
+    }
+
+    // City filter
+    if (!(city === "all" || event.location === city || (city === "online" && event.location === "Online"))) return false;
+
+    // Event type dropdown filter
+    if (!(eventType === "all" || event.type === eventType)) return false;
+
+    // Search query (name or keywords in description)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const inTitle = event.title.toLowerCase().includes(q);
+      const inDesc = (event.description || "").toLowerCase().includes(q) || (event.info?.about || "").toLowerCase().includes(q);
+      if (!inTitle && !inDesc) return false;
+    }
+
+    // Chip filters (tags)
+    if (activeChips.length > 0) {
+      const matchesChip = activeChips.some(chip => event.type?.toLowerCase().includes(chip.toLowerCase()) || (event.info?.skills || []).some((s: string) => s.toLowerCase().includes(chip.toLowerCase())));
+      if (!matchesChip) return false;
+    }
+
+    return true;
   });
 
   const handleHostEvent = (formData: any) => {
@@ -137,6 +163,59 @@ const Events = () => {
 
   return (
     <>
+      {/* Hero Banner Section */}
+      <div className="relative h-[500px] flex flex-col items-center justify-center bg-gradient-to-br from-purple-700 via-pink-500 to-blue-500 overflow-hidden">
+        {/* Large Hero Image */}
+        <div className="absolute inset-0 flex items-center justify-center z-0">
+          <img
+            src={WhystudlyfImg}
+            alt="Events Hero"
+            className="w-full h-full object-cover opacity-60"
+            style={{ maxHeight: "500px" }}
+          />
+        </div>
+        {/* Subtle silhouette blobs */}
+        <svg className="pointer-events-none absolute -left-10 top-8 w-80 h-80 z-5 blur-3xl opacity-30 mix-blend-screen" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1">
+              <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.8" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#g1)" d="M44.8,-23.5C55.9,-8.7,58.6,14.1,49.8,30.3C41.1,46.6,20.6,56.2,0.6,55.4C-19.3,54.6,-38.7,43.3,-49.7,27.3C-60.6,11.2,-63.1,-10.7,-52.6,-25.7C-42.1,-40.7,-18.6,-48.9,3.9,-50.2C26.3,-51.5,52.8,-45.5,44.8,-23.5Z" transform="translate(100 100)" />
+        </svg>
+        <svg className="pointer-events-none absolute right-6 -bottom-8 w-72 h-72 z-5 blur-2xl opacity-25 mix-blend-screen" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <defs>
+            <linearGradient id="g2" x1="0" x2="1">
+              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.85" />
+              <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.7" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#g2)" d="M37.6,-20.8C49.3,-2.1,55.8,21.7,47.9,37.7C40,53.7,17.7,61.8,-2.3,63.3C-22.3,64.8,-44.6,59.6,-60.4,45.5C-76.2,31.4,-85.5,8.5,-79.1,-8.9C-72.7,-26.3,-50.6,-36.9,-30.1,-47C-9.6,-57.1,8.6,-66.6,27.8,-64.1C46.9,-61.6,65.9,-47.6,37.6,-20.8Z" transform="translate(100 100)" />
+        </svg>
+        <div className="absolute inset-0 bg-black/40 z-10" />
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg">
+              Ignite Your Potential
+            </h1>
+            <p className="text-xl md:text-2xl text-white/80 mb-8 font-medium">
+              Discover cutting-edge events, workshops, and networking opportunities that<br />
+              will transform your future.
+            </p>
+            <a
+              href="#events-list"
+              className="inline-block px-8 py-4 rounded-full bg-pink-500 text-white font-bold text-lg shadow-lg hover:bg-pink-600 transition"
+            >
+              Explore Events
+            </a>
+            {/* chooser removed */}
+          </div>
+        </div>
+        {/* Optional: Add animated confetti or particles here */}
+        {/* dynamic hero element removed */}
+      </div>
+
       <Helmet>
         <title>Events | StudLyF – Learn & Network</title>
         <meta name="description" content="Join events, workshops, and networking opportunities. StudLyF helps you learn, connect, and grow through curated events." />
@@ -187,7 +266,9 @@ const Events = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 pt-24 pb-16 relative"
+        id="events-list"
+        className="container mx-auto px-4 pt-24 pb-16 relative text-base md:text-lg"
+        style={{ fontFamily: 'Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', lineHeight: 1.65 }}
       >
         <div className="max-w-5xl mx-auto">
           <motion.div
@@ -198,7 +279,7 @@ const Events = () => {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
               <div>
                 <SplitText
-                  text="Next-Gen Events"
+                  text="Events" // changed from "Next-Gen Events"
                   className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink"
                   delay={50}
                   animationFrom={{ opacity: 0, transform: 'translate3d(0, 30px, 0)' }}
@@ -208,7 +289,7 @@ const Events = () => {
                   rootMargin="-100px"
                 />
                 <p className="text-lg md:text-xl mb-8 text-foreground/80 max-w-2xl">
-                  Discover cutting-edge hackathons, workshops, and learning opportunities across the digital frontier.
+                  Browse upcoming events, workshops and networking opportunities.
                 </p>
               </div>
               <Button
@@ -218,6 +299,103 @@ const Events = () => {
                 <Plus size={18} />
                 Host Event
               </Button>
+            </div>
+            {/* Search + Filters */}
+            <div className="bg-black/50 border border-white/5 rounded-xl p-4 mb-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+                <div className="flex-1">
+                  <div className="relative">
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Quick search events by name or keyword..."
+                      className="w-full bg-transparent border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-gray-400"
+                    />
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-300 hover:text-white"
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {['Hackathon','AI','Cloud','Workshop','Entrepreneurship'].map(chip => (
+                      <button
+                        key={chip}
+                        onClick={() => setActiveChips(prev => prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip])}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${activeChips.includes(chip) ? 'bg-white/10 text-white' : 'bg-white/3 text-gray-200'}`}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setAdvancedOpen(v => !v)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-white"
+                  >
+                    <FilterIcon className="w-4 h-4" />
+                    Advanced
+                  </button>
+                  <button
+                    onClick={() => { setSearchQuery(''); setActiveChips([]); setCity('all'); setEventType('all'); }}
+                    className="px-3 py-2 rounded-lg bg-red-600 text-white hover:opacity-90"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+              </div>
+
+              {/* Collapsible advanced filters */}
+              {advancedOpen && (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-sm text-gray-300 mb-1 inline-block">City</label>
+                    <Select onValueChange={(v) => setCity(v)} defaultValue={city}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All cities" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Cities</SelectItem>
+                        <SelectItem value="Online">Online</SelectItem>
+                        <SelectItem value="BVRIT">BVRIT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-300 mb-1 inline-block">Event Type</label>
+                    <Select onValueChange={(v) => setEventType(v)} defaultValue={eventType}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="All types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="Hackathon">Hackathon</SelectItem>
+                        <SelectItem value="Workshop">Workshop</SelectItem>
+                        <SelectItem value="Entrepreneurship">Entrepreneurship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-300 mb-1 inline-block">When</label>
+                    <Select onValueChange={() => {}} defaultValue="upcoming">
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Upcoming" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="upcoming">Upcoming</SelectItem>
+                        <SelectItem value="past">Past</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 

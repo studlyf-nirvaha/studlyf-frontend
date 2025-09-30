@@ -1,142 +1,216 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Globe, Calendar, Users, DollarSign } from "lucide-react";
 import { SplitText } from "@/components/ui/split-text";
 
 const scholarships = [
   {
     id: 1,
-    title: 'TVS Cheema Scholarship Foundation',
-    description: 'Scholarships for meritorious students from economically weaker sections, provided by TVS Cheema Scholarship Foundation.',
-    link: 'https://www.tvscsf.com/'
+    title: "TVS Cheema Scholarship Foundation",
+    description: "Scholarships for meritorious students from economically weaker sections.",
+    link: "https://www.tvscsf.com/",
   },
   {
     id: 2,
-    title: 'ICF Foundation Scholarship',
-    description: 'ICF Foundation offers scholarships to support students in their academic pursuits. Application is open for eligible candidates.',
-    link: 'https://foundationoficf.org/news/icf-foundation-scholarship-application-open/?gad_source=1&gad_campaignid=9268899598&gbraid=0AAAAACnqSymVqNQDngJ-lfJ0crfJC8RBN&gclid=CjwKCAjwvuLDBhAOEiwAPtF0Vm-6clMzobA661OnYMihFGTDTIFYLgq2RqM68Uqc1ZUc1WwELLIquRoCB5IQAvD_BwE'
+    title: "ICF Foundation Scholarship",
+    description: "ICF Foundation supports students in their academic pursuits.",
+    link: "https://foundationoficf.org/",
   },
   {
     id: 3,
-    title: 'Sitaram Jindal Foundation Scholarships',
-    description: 'Scholarships for students in Bangalore and across India, supporting various levels of education.',
-    link: 'https://www.sitaramjindalfoundation.org/scholarships-for-students-in-bangalore.php'
+    title: "Sitaram Jindal Foundation Scholarships",
+    description: "Scholarships supporting various levels of education across India.",
+    link: "https://www.sitaramjindalfoundation.org/",
   },
   {
     id: 4,
-    title: 'Prime Minister’s Scholarship Scheme (PMSS)',
-    description: 'A government initiative to provide financial assistance to dependent wards of ex-servicemen/ex-coast guard personnel.',
-    link: 'https://www.myscheme.gov.in/schemes/pmss'
+    title: "Prime Minister’s Scholarship Scheme (PMSS)",
+    description: "Financial aid for wards of ex-servicemen and Coast Guard personnel.",
+    link: "https://www.myscheme.gov.in/schemes/pmss",
   },
   {
     id: 5,
-    title: 'Indira Gandhi Single Girl Child Scholarship',
-    description: 'Scholarship for single girl children pursuing higher education, aimed at promoting education among girls.',
-    link: 'https://www.buddy4study.com/article/indira-gandhi-single-girl-child-scholarship'
+    title: "Indira Gandhi Single Girl Child Scholarship",
+    description: "For single girl children pursuing higher education.",
+    link: "https://www.buddy4study.com/article/indira-gandhi-single-girl-child-scholarship",
   },
   {
     id: 6,
-    title: 'Infosys STEM Stars Scholarship',
-    description: 'Infosys Foundation offers scholarships to support girls pursuing STEM education in India.',
-    link: 'https://www.buddy4study.com/page/infosys-stem-stars-scholarship'
+    title: "Infosys STEM Stars Scholarship",
+    description: "Empowering girls in STEM education across India.",
+    link: "https://www.buddy4study.com/page/infosys-stem-stars-scholarship",
   },
 ];
 
-// Additional scholarships from user
-const additionalScholarships = [
-  {
-    title: 'TVS Cheema Scholarship Foundation',
-    description: 'Scholarships for meritorious students from economically weaker sections, provided by TVS Cheema Scholarship Foundation.',
-    link: 'https://www.tvscsf.com/'
-  },
-  {
-    title: 'ICF Foundation Scholarship',
-    description: 'ICF Foundation offers scholarships to support students in their academic pursuits. Application is open for eligible candidates.',
-    link: 'https://foundationoficf.org/news/icf-foundation-scholarship-application-open/?gad_source=1&gad_campaignid=9268899598&gbraid=0AAAAACnqSymVqNQDngJ-lfJ0crfJC8RBN&gclid=CjwKCAjwvuLDBhAOEiwAPtF0Vm-6clMzobA661OnYMihFGTDTIFYLgq2RqM68Uqc1ZUc1WwELLIquRoCB5IQAvD_BwE'
-  },
-  {
-    title: 'Sitaram Jindal Foundation Scholarships',
-    description: 'Scholarships for students in Bangalore and across India, supporting various levels of education.',
-    link: 'https://www.sitaramjindalfoundation.org/scholarships-for-students-in-bangalore.php'
-  },
-  {
-    title: 'Prime Minister’s Scholarship Scheme (PMSS)',
-    description: 'A government initiative to provide financial assistance to dependent wards of ex-servicemen/ex-coast guard personnel.',
-    link: 'https://www.myscheme.gov.in/schemes/pmss'
-  },
-  {
-    title: 'Indira Gandhi Single Girl Child Scholarship',
-    description: 'Scholarship for single girl children pursuing higher education, aimed at promoting education among girls.',
-    link: 'https://www.buddy4study.com/article/indira-gandhi-single-girl-child-scholarship'
-  },
-  {
-    title: 'Infosys STEM Stars Scholarship',
-    description: 'Infosys Foundation offers scholarships to support girls pursuing STEM education in India.',
-    link: 'https://www.buddy4study.com/page/infosys-stem-stars-scholarship'
-  },
-];
-
-const Scholarships = () => {
-  // Removed filter state and logic since not needed
-
+export default function Scholarships() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navbar />
-      <div className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+    <div className="relative min-h-screen bg-black text-white overflow-hidden">
+      {/* 🌠 Floating Starfield */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {Array.from({ length: 40 }).map((_, i) => (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            key={i}
+            className="absolute rounded-full bg-white shadow-[0_0_8px_#fff]"
+            style={{
+              width: Math.random() * 3 + 1,
+              height: Math.random() * 3 + 1,
+              top: Math.random() * 100 + "%",
+              left: Math.random() * 100 + "%",
+              opacity: Math.random() * 0.7 + 0.3,
+            }}
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              opacity: [0.4, 1, 0.4],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 20 + Math.random() * 15,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* 🌍 Animated Background Globe */}
+      <div className="absolute inset-0 z-0 flex justify-center items-center">
+        <motion.div
+          className="absolute w-[600px] h-[600px] bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-full blur-3xl opacity-30"
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 20, -20, 0],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        {/* 🌐 Rotating Globe */}
+        <motion.svg
+          width="400"
+          height="400"
+          viewBox="0 0 400 400"
+          className="absolute opacity-50"
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 60, ease: "linear" }}
+        >
+          <defs>
+            <radialGradient id="globe-gradient" r="100%">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#ec4899" />
+            </radialGradient>
+          </defs>
+          <circle cx="200" cy="200" r="180" stroke="url(#globe-gradient)" strokeWidth="0.5" fill="none" />
+          {Array.from({ length: 10 }).map((_, i) => (
+            <ellipse
+              key={i}
+              cx="200"
+              cy="200"
+              rx={180 - i * 15}
+              ry={180}
+              stroke="url(#globe-gradient)"
+              strokeWidth="0.4"
+              fill="none"
+              opacity="0.4"
+            />
+          ))}
+          {Array.from({ length: 12 }).map((_, i) => (
+            <line
+              key={i}
+              x1="200"
+              y1="20"
+              x2="200"
+              y2="380"
+              stroke="url(#globe-gradient)"
+              strokeWidth="0.4"
+              transform={`rotate(${i * 15} 200 200)`}
+              opacity="0.3"
+            />
+          ))}
+        </motion.svg>
+
+        {/* Floating Orbit Particles */}
+        {Array.from({ length: 10 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-pink-400 shadow-[0_0_10px_#ec4899]"
+            animate={{
+              x: [0, Math.sin(i) * 300, 0],
+              y: [0, Math.cos(i) * 200, 0],
+              opacity: [0.3, 1, 0.3],
+              scale: [0.8, 1.2, 0.8],
+            }}
+            transition={{
+              duration: 6 + i * 0.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Foreground Content */}
+      <div className="relative z-10">
+        <Navbar />
+
+        <div className="max-w-6xl mx-auto px-4 py-20 text-center">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            transition={{ duration: 1 }}
+            className="inline-block bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-3xl px-10 py-10 border border-purple-500/30 backdrop-blur-md shadow-[0_0_50px_rgba(168,85,247,0.4)]"
           >
             <SplitText
-              text="Scholarships"
-              className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink"
+              text="Scholarships for Students"
+              className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400"
               delay={50}
-              animationFrom={{ opacity: 0, transform: 'translate3d(0, 30px, 0)' }}
-              animationTo={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+              animationFrom={{ opacity: 0, transform: "translate3d(0, 30px, 0)" }}
+              animationTo={{ opacity: 1, transform: "translate3d(0, 0, 0)" }}
               easing="easeOutCubic"
               threshold={0.3}
-              rootMargin="-100px"
             />
-            <p className="text-xl text-white max-w-2xl mx-auto">
-              Find national and international scholarships to fund your education and dreams.
+            <p className="mt-4 text-gray-300 text-lg max-w-2xl mx-auto">
+              Discover national & international scholarships to fund your education and dreams.
             </p>
           </motion.div>
 
-          {/* Scholarships Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="grid md:grid-cols-2 gap-6"
-          >
-            {scholarships.map((scholarship) => (
-              <Card key={scholarship.id || scholarship.title} className="bg-gradient-to-br from-white/5 to-white/10 border-white/10 hover:border-brand-purple/40 transition-all duration-300 rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold text-white">{scholarship.title}</CardTitle>
-                  <CardDescription className="text-white">{scholarship.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {scholarship.link && (
-                    <a href={scholarship.link} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-brand-purple font-semibold hover:underline">Learn More</a>
-                  )}
-                </CardContent>
-              </Card>
+          {/* Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-20">
+            {scholarships.map((s) => (
+              <motion.div
+                key={s.id}
+                whileHover={{ scale: 1.05, boxShadow: "0 0 25px rgba(168,85,247,0.4)" }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >
+                <Card className="relative bg-gradient-to-br from-gray-900/60 to-gray-800/50 p-6 rounded-2xl border border-purple-500/20 shadow-lg backdrop-blur-md hover:border-purple-500/60 transition-all duration-300 cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-semibold text-purple-300 mb-2">{s.title}</CardTitle>
+                    <CardDescription className="text-gray-300 text-sm">{s.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <motion.a
+                      href={s.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.1 }}
+                      className="inline-block mt-4 px-6 py-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-medium shadow-lg hover:shadow-purple-500/40 transition"
+                    >
+                      Learn More
+                    </motion.a>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
+
+        <Footer />
       </div>
-      <Footer />
     </div>
   );
-};
-
-export default Scholarships;
+}

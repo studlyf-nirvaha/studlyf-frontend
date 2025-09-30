@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 // Refactored components
-import FinanceHero from "@/components/finance/FinanceHero";
+import FinanceHero from "@/components/finance/FinanceHero"; // <-- already updated to show first image
 import SmartFilters from "@/components/finance/SmartFilters";
 import GuidedPath from "@/components/finance/GuidedPath";
 import LearningCards from "@/components/finance/LearningCards";
@@ -30,18 +30,24 @@ const Finance = () => {
     <>
       <Helmet>
         <title>Finance | StudLyF – Smart Student Finance Tools</title>
-        <meta name="description" content="Plan, track, and optimize your finances with calculators, planners, and smart tools for students." />
+        <meta
+          name="description"
+          content="Plan, track, and optimize your finances with calculators, planners, and smart tools for students."
+        />
       </Helmet>
+
       {/* Contextual internal links for SEO */}
-      <div className="seo-links" style={{ display: 'none' }}>
+      <div className="seo-links" style={{ display: "none" }}>
         <a href="/events">Events</a>
         <a href="/network">Network</a>
         <a href="/project-hunt">Project Hunt</a>
         <a href="/startups">Startups</a>
       </div>
+
       <div className="min-h-screen bg-black overflow-x-hidden relative">
-        {/* Spline Animation moved to FinanceHero */}
+        {/* Navbar */}
         <Navbar />
+
         <div className="relative z-10 w-full">
           <div className="w-full px-4 pt-20 pb-16">
             <motion.div
@@ -50,12 +56,13 @@ const Finance = () => {
               animate={{ opacity: isLoaded ? 1 : 0 }}
               transition={{ duration: 0.8 }}
             >
-              {/* Hero Section */}
+              {/* ✅ Hero Section (now using first image via FinanceHero.jsx) */}
               <FinanceHero
                 showAdvanced={showAdvanced}
                 setShowAdvanced={setShowAdvanced}
               />
-              {/* Smart Tools & Calculators - Now second section */}
+
+              {/* Smart Tools & Calculators */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -64,6 +71,7 @@ const Finance = () => {
               >
                 <SmartTools />
               </motion.div>
+
               {/* Smart Filters + Search */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -80,6 +88,7 @@ const Finance = () => {
                   setSortBy={setSortBy}
                 />
               </motion.div>
+
               {/* Core Learning Cards */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -89,6 +98,7 @@ const Finance = () => {
               >
                 <LearningCards selectedCategory={selectedCategory} />
               </motion.div>
+
               {/* Recommendations & Resources */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -98,6 +108,7 @@ const Finance = () => {
               >
                 <RecommendationsSection />
               </motion.div>
+
               {/* Call-to-Action Section */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -112,7 +123,7 @@ const Finance = () => {
         </div>
       </div>
 
-      {/* Guided Path / Interactive Quiz - now above Footer */}
+      {/* Guided Path / Interactive Quiz */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -122,6 +133,7 @@ const Finance = () => {
         <GuidedPath />
       </motion.div>
 
+      {/* Footer */}
       <Footer />
     </>
   );

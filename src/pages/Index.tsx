@@ -15,6 +15,7 @@ import ContainerScroll from "@/components/ui/ContainerScroll";
 import { GradientText } from "@/components/ui/GradientText";
 import { CardCarousel } from "@/components/ui/CardCarousel";
 import AdGrid from "@/components/ui/AdGrid";
+
 import { LoaderOne } from "@/components/ui/loader";
 
 const FEATURES = [
@@ -330,90 +331,70 @@ const Index = () => {
         <Navbar />
       </div>
 
-      {/* Hero Section with Video Background */}
-      <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-black">
-        {/* Black sheet to cover the background completely */}
-        <div className="absolute inset-0 bg-black z-0" />
-        {/* Video background and overlay text together */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-          <div className="w-full max-w-3xl aspect-video flex items-center justify-center">
-            <video
-              src="/anima/animation.mp4"
-              className="w-full h-full object-contain bg-black"
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ boxShadow: 'none', border: 'none', borderRadius: 0, background: 'black', filter: 'brightness(1) blur(3px)' }}
-            />
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 30,
-              pointerEvents: 'none',
-              width: '100%',
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+{/* ======================== Hero Section ======================== */}
+<div className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 bg-[#050014] overflow-hidden">
+
+  {/* Background Video or Image */}
+  <video
+    src="/animi/globe-loop.mp4" // replace with your actual path
+    className="absolute inset-0 w-full h-full object-cover opacity-30"
+    autoPlay
+    loop
+    muted
+    playsInline
+  />
+
+  {/* Overlay Glow */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-[#0a001a]/90" />
+
+  {/* ======================== Hero Content ======================== */}
+  <motion.div
+    className="relative z-10 max-w-3xl"
+    initial="hidden"
+    animate="visible"
+    variants={{
+      hidden: { opacity: 0 },
+      visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.3, delayChildren: 0.2 },
+      },
+    }}
+  >
+    <motion.h1
+      className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-4"
+      variants={{
+        hidden: { opacity: 0, y: 30 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+      }}
+    >
+      <span className="block text-lg sm:text-xl text-purple-300 font-semibold italic tracking-wide mb-2">
+            Building the
+          </span>
+          <span
+            className="block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-600 
+              bg-clip-text text-transparent
+              drop-shadow-[0_0_15px_rgba(168,85,247,0.6)]
+              sm:drop-shadow-[0_0_25px_rgba(236,72,153,0.7)]"
           >
-            <motion.span
-              initial={{ fontSize: '1.5rem' }}
-              animate={{ fontSize: '4.5rem' }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-              style={{
-                fontFamily: 'Lucida Handwriting, cursive',
-                color: '#fff',
-                textShadow: '0 4px 24px #000, 0 1.5px 6px #a259ff',
-                fontWeight: 500,
-                letterSpacing: 2,
-                marginBottom: '-0.5rem',
-                opacity: 1,
-              }}
-            >
-              Building
-            </motion.span>
-            <motion.span
-              initial={{ fontSize: '1.2rem' }}
-              animate={{ fontSize: '3rem' }}
-              transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 }}
-              style={{
-                fontFamily: 'Lucida Handwriting, cursive',
-                color: '#fff',
-                textShadow: '0 4px 24px #000, 0 1.5px 6px #a259ff',
-                fontWeight: 400,
-                letterSpacing: 2,
-                marginBottom: '-0.5rem',
-                opacity: 1,
-              }}
-            >
-              the
-            </motion.span>
-            <motion.span
-              initial={{ fontSize: '2rem' }}
-              animate={{ fontSize: '5rem' }}
-              transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
-              style={{
-                fontFamily: 'Lucida Handwriting, cursive',
-                color: '#fff',
-                textShadow: '0 4px 24px #000, 0 1.5px 6px #a259ff',
-                fontWeight: 700,
-                letterSpacing: 2,
-                marginTop: '0.2rem',
-                opacity: 1,
-              }}
-            >
-              Student Internet
-            </motion.span>
-          </div>
-        </div>
-      </div>
+            Student Internet
+          </span>
+    </motion.h1>
+
+    <motion.p
+      className="mt-4 text-lg md:text-xl text-white/70"
+      variants={{
+        hidden: { opacity: 0, y: 30 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+      }}
+    >
+      Empowering students with smarter study & balanced life.
+    </motion.p>
+  </motion.div>
+</div>
+
+      {/* Main scrollable container */}
+
+
       {/* Black background moved to the farthest back for animation visibility */}
       <ContainerScroll titleComponent={<></>}>
         <div className="flex flex-col items-center justify-center h-full px-2 sm:px-4 mb-24">
