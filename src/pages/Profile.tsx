@@ -198,29 +198,31 @@ export default function Profile() {
             {/* Projects */}
             <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
               <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Projects</h3>
-              {Array.isArray(profile?.projectFiles) && profile.projectFiles.length > 0 ? (
-                <ul className="space-y-1">
-                  {profile.projectFiles.map((file, idx) => (
-                    <li key={idx} className="flex items-center gap-1">
-                      <FileText className="w-4 h-4 text-[#ff7eb3]" />
-                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-white/90 underline text-base">{file.name || file}</a>
+              {Array.isArray(profile?.projects) && profile.projects.length > 0 ? (
+                <ul className="space-y-2">
+                  {profile.projects.map((p, idx) => (
+                    <li key={idx} className="text-white/90 text-sm border border-white/10 rounded p-2">
+                      <div className="font-bold mb-1">Project {idx + 1}</div>
+                      <div className="flex flex-wrap gap-3">
+                        {p.githubUrl && <a className="underline text-[#a259ff]" href={p.githubUrl} target="_blank" rel="noopener noreferrer">GitHub</a>}
+                        {p.liveUrl && <a className="underline text-[#ff7eb3]" href={p.liveUrl} target="_blank" rel="noopener noreferrer">Live</a>}
+                        {p.youtubeUrl && <a className="underline text-white/80" href={p.youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube</a>}
+                      </div>
+                      {p.description && <div className="text-white/70 mt-1">{p.description}</div>}
                     </li>
                   ))}
                 </ul>
-              ) : <span className="text-white/60 text-sm">No projects uploaded.</span>}
+              ) : <span className="text-white/60 text-sm">No projects added.</span>}
             </div>
             {/* Certifications */}
             <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
               <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Certifications</h3>
               {Array.isArray(profile?.certificationFiles) && profile.certificationFiles.length > 0 ? (
-                <ul className="space-y-1">
-                  {profile.certificationFiles.map((file, idx) => (
-                    <li key={idx} className="flex items-center gap-1">
-                      <Award className="w-4 h-4 text-[#ff7eb3]" />
-                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-white/90 underline text-base">{file.name || file}</a>
-                    </li>
+                <div className="flex flex-wrap gap-3">
+                  {profile.certificationFiles.map((url, idx) => (
+                    <img key={idx} src={url.url || url} alt={`Certificate ${idx+1}`} className="w-20 h-20 object-cover rounded border border-white/20 cursor-pointer" onClick={() => window.open(url.url || url, '_blank')} />
                   ))}
-                </ul>
+                </div>
               ) : <span className="text-white/60 text-sm">No certifications uploaded.</span>}
             </div>
             {/* Profile & Preferences */}

@@ -27,9 +27,10 @@ interface UserProfileCardProps {
   // onMessageClick?: () => void; // REMOVE
   getConnectionStatus: (userId: string) => 'none' | 'pending' | 'connected';
   onConnect: (userId: string) => void;
+  unreadCount?: number;
 }
 
-const UserProfileCard = ({ user, getConnectionStatus, onConnect }: UserProfileCardProps) => {
+const UserProfileCard = ({ user, getConnectionStatus, onConnect, unreadCount = 0 }: UserProfileCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [showFullBio, setShowFullBio] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -135,12 +136,17 @@ const UserProfileCard = ({ user, getConnectionStatus, onConnect }: UserProfileCa
                 >
                   <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
                   Message
+                  {unreadCount > 0 && (
+                    <span className="relative ml-2 inline-block">
+                      <span className="block w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-white/20" />
+                    </span>
+                  )}
                 </Button>
                 <ChatModal
                   isOpen={isChatOpen}
                   onClose={() => setIsChatOpen(false)}
                   user={{
-                    id: Number(user._id || user.id),
+                    id: String(user._id || user.id),
                     name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.name,
                     profilePicture: user.profilePicture,
                     isOnline: user.isOnline || false,

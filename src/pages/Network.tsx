@@ -21,8 +21,10 @@ import {
   getConnectionRequests,
   sendConnectionRequest,
   acceptConnectionRequest,
-  rejectConnectionRequest
+  rejectConnectionRequest,
+  ApiService
 } from '@/lib/api';
+import { initSocket, getSocket } from '@/lib/socket';
 import { Helmet } from "react-helmet-async";
 
 // Add a type for user to ensure id is present
@@ -95,7 +97,8 @@ const Network = () => {
   const [users, setUsers] = useState<NetworkUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState(0); // TODO: Replace with real unread count from backend or context
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [peerUnreadMap, setPeerUnreadMap] = useState<Record<string, number>>({});
   const [connections, setConnections] = useState<string[]>([]); // user IDs
   const [incomingRequests, setIncomingRequests] = useState<any[]>([]); // [{from, to, ...}]
   const [pendingRequests, setPendingRequests] = useState<string[]>([]); // user IDs to whom I sent requests
@@ -207,11 +210,60 @@ const Network = () => {
       .catch(() => { });
   }, [userId]);
 
-  // TODO: Implement real-time message notifications
+  // Initialize socket and unread counts
   useEffect(() => {
     if (!userId) return;
-    // For now, set a placeholder unread count
-    setUnreadMessages(0);
+    const apiBase = (ApiService as any).getBaseUrl ? (ApiService as any).getBaseUrl() : (
+      (import.meta as any).env?.VITE_API_BASE_URL
+        ? (import.meta as any).env.VITE_API_BASE_URL
+        : ((import.meta as any).env?.PROD ? 'https://studlyf.in' : 'http://localhost:3000')
+    );
+    const socket = initSocket(apiBase, userId);
+
+    // initial unread counts
+    ApiService.getUnreadCounts(userId).then((counts) => {
+      setPeerUnreadMap(counts || {});
+      const peersWithUnread = Object.values(counts || {}).filter((v: number) => (v || 0) > 0).length;
+      setUnreadMessages(peersWithUnread);
+    }).catch(() => {});
+
+    const onNewMessage = (msg: any) => {
+      if (msg && msg.to === userId && msg.from) {
+        setPeerUnreadMap(prev => {
+          const next = { ...prev, [msg.from]: (prev[msg.from] || 0) + 1 } as Record<string, number>;
+          const peersWithUnread = Object.values(next).filter((v) => (v || 0) > 0).length;
+          setUnreadMessages(peersWithUnread);
+          return next;
+        });
+      }
+    };
+    const onRead = (payload: any) => {
+      const peer = payload?.peer;
+      const by = payload?.by;
+      if (!peer || !by) return;
+      // when current user read messages from peer
+      if (by === userId) {
+        setPeerUnreadMap(prev => {
+          if (!prev[peer]) return prev;
+          const next: Record<string, number> = { ...prev };
+          delete next[peer];
+          const peersWithUnread = Object.values(next).filter((v) => (v || 0) > 0).length;
+          setUnreadMessages(peersWithUnread);
+          return next;
+        });
+      }
+    };
+
+    socket.on('message:new', onNewMessage);
+    socket.on('message:read', onRead);
+
+    return () => {
+      const s = getSocket();
+      if (s) {
+        s.off('message:new', onNewMessage);
+        s.off('message:read', onRead);
+      }
+    };
   }, [userId]);
 
   const handleMessageClick = (user) => {
@@ -333,7 +385,7 @@ const Network = () => {
 
   const handleChatUserSelect = (user: NetworkUser) => {
     setSelectedChatUser({
-      id: Number(user._id),
+      id: String(user._id),
       name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : `${user.firstName || ''}`.trim(),
       profilePicture: user.profilePicture,
       isOnline: user.isOnline || false,
@@ -432,7 +484,7 @@ const Network = () => {
               >
                 <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
                 {unreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] sm:text-xs rounded-full min-w-[16px] h-4 sm:h-5 px-1 flex items-center justify-center ring-2 ring-black">
                     {unreadMessages}
                   </span>
                 )}
@@ -544,7 +596,7 @@ const Network = () => {
                     >
                       <MessageSquare className="w-5 h-5" />
                       {unreadMessages > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center ring-2 ring-black">
                           {unreadMessages}
                         </span>
                       )}
@@ -593,6 +645,7 @@ const Network = () => {
                             }}
                             getConnectionStatus={getConnectionStatus}
                             onConnect={handleConnect}
+                            unreadCount={peerUnreadMap[user._id] || 0}
                           />
                         </motion.div>
                       ))}

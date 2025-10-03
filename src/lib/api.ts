@@ -7,11 +7,26 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_BASE_URL;
   }
 
-  // Use Flask backend for all API calls
-  return 'http://localhost:5001';
+  // Production URL or local backend
+  if (import.meta.env.PROD) {
+    return 'https://studlyf.in';
+  }
+
+  // Development: prefer Node/Express backend (profile, uploads, messaging)
+  return 'http://localhost:3000';
 };
 
 const API_BASE_URL = getApiBaseUrl();
+const FALLBACK_BASE_URLS = [
+  'http://localhost:3000',
+  'http://localhost:5001',
+];
+const getChatApiBaseUrl = () => {
+  if (import.meta.env.VITE_CHAT_API_BASE_URL) return import.meta.env.VITE_CHAT_API_BASE_URL as string;
+  // heuristic: if pointing to Flask in dev, fall back to Node on 3000
+  if (API_BASE_URL.includes('localhost:5001')) return 'http://localhost:3000';
+  return API_BASE_URL;
+};
 
 const getIdToken = async (): Promise<string | null> => {
   try {
@@ -23,29 +38,34 @@ const getIdToken = async (): Promise<string | null> => {
   }
 };
 
+const tryFetch = async (baseUrl: string, endpoint: string, options: RequestInit): Promise<Response> => {
+  const token = await getIdToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
+  } as Record<string, string>;
+  return fetch(`${baseUrl}${endpoint}`, { ...options, headers });
+};
+
 const authenticatedFetch = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
   try {
-    const token = await getIdToken();
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    };
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    // If backend is not available, return a mock response
-    if (!response.ok && response.status === 0) {
-      return new Response(JSON.stringify({ error: 'Service unavailable' }), {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    // Try primary then fallbacks
+    const bases = [API_BASE_URL, ...FALLBACK_BASE_URLS.filter(b => b !== API_BASE_URL)];
+    let lastError: any = null;
+    for (const base of bases) {
+      try {
+        const resp = await tryFetch(base, endpoint, options);
+        if (resp.ok || resp.status !== 0) return resp;
+      } catch (e) {
+        lastError = e;
+      }
     }
-
-    return response;
+    // If all attempts failed, return mock 503
+    return new Response(JSON.stringify({ error: 'Connection failed' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
     // Return a mock response when network fails
     return new Response(JSON.stringify({ error: 'Connection failed' }), {
@@ -57,6 +77,9 @@ const authenticatedFetch = async (endpoint: string, options: RequestInit = {}): 
 
 // API Service Class
 export class ApiService {
+  static getBaseUrl() {
+    return API_BASE_URL;
+  }
   // User Management
   static async createUser(userData: {
     uid: string;
@@ -127,13 +150,19 @@ export class ApiService {
 
   // Users (Public)
   static async getAllUsers() {
-    const response = await fetch(`${API_BASE_URL}/api/users`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to get users: ${response.statusText}`);
+    // try primary then fallbacks without auth
+    const bases = [API_BASE_URL, ...FALLBACK_BASE_URLS.filter(b => b !== API_BASE_URL)];
+    let lastErr: any = null;
+    for (const base of bases) {
+      try {
+        const response = await fetch(`${base}/api/users`);
+        if (response.ok) return response.json();
+        lastErr = new Error(await response.text());
+      } catch (e) {
+        lastErr = e;
+      }
     }
-
-    return response.json();
+    throw new Error(`Failed to get users: ${lastErr?.message || 'connection failed'}`);
   }
 
   // Connections
@@ -217,6 +246,85 @@ export class ApiService {
       throw new Error(`Failed to get messages: ${response.statusText}`);
     }
 
+    return response.json();
+  }
+
+  static async sendImageMessage(from: string, to: string, file: File) {
+    const token = await getIdToken();
+    const form = new FormData();
+    form.append('from', from);
+    form.append('to', to);
+    form.append('image', file);
+    const response = await fetch(`${getChatApiBaseUrl()}/api/messages/send-image`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: form,
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to send image: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  static async forwardMessage(from: string, to: string, messageId: string) {
+    const response = await authenticatedFetch('/api/messages/forward', {
+      method: 'POST',
+      body: JSON.stringify({ from, to, messageId }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to forward message: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  static async getUnreadCounts(uid: string) {
+    const base = getChatApiBaseUrl();
+    const token = await getIdToken();
+    const response = await fetch(`${base}/api/messages/unread-counts/${uid}`, {
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to get unread counts: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  static async markMessagesRead(peerId: string) {
+    const base = getChatApiBaseUrl();
+    const token = await getIdToken();
+    const response = await fetch(`${base}/api/messages/${peerId}/read`, {
+      method: 'PATCH',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to mark messages read: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  // Profile: Certificate image upload
+  static async uploadCertificateImage(file: File) {
+    const token = await getIdToken();
+    const form = new FormData();
+    form.append('image', file);
+    const response = await fetch(`${API_BASE_URL}/api/profile/certificates/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: form,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || response.statusText);
+    }
     return response.json();
   }
 

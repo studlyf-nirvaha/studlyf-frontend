@@ -6,15 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, X, User } from "lucide-react";
 import { useAuth } from '@/lib/AuthContext';
-import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, addDoc, serverTimestamp, onSnapshot, deleteDoc, getDocs } from 'firebase/firestore';
+import { ApiService } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
 import { useNavigate } from "react-router-dom";
 
 interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: {
-    id: number;
+    id: string;
     _id?: string;
     name: string;
     profilePicture: string;
@@ -27,34 +27,40 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen || !user || !currentUser) return;
-        setLoading(true);
-        setError(null);
-    const q = query(
-      collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid),
-      orderBy('timestamp', 'asc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messageList = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter((msg: any) => 
-          Array.isArray(msg.participants) && 
-          msg.participants.includes(user._id || user.id.toString()) && 
-          msg.participants.includes(currentUser.uid)
-        );
-      setMessages(messageList);
-            setLoading(false);
-    }, (err) => {
-      setError('Unable to load messages at this time.');
-            setLoading(false);
-    });
-    return () => unsubscribe();
+    setLoading(true);
+    setError(null);
+    ApiService.getMessages(currentUser.uid, String(user._id || user.id))
+      .then((msgs) => {
+        setMessages(msgs || []);
+        setLoading(false);
+        // mark read
+        ApiService.markMessagesRead(String(user._id || user.id)).catch(() => {});
+      })
+      .catch(() => {
+        setError('Unable to load messages at this time.');
+        setLoading(false);
+      });
+
+    const socket = getSocket();
+    if (!socket) return;
+    const onNew = (msg: any) => {
+      if (!msg) return;
+      const peerId = String(user._id || user.id);
+      if ((msg.from === currentUser.uid && msg.to === peerId) || (msg.from === peerId && msg.to === currentUser.uid)) {
+        setMessages(prev => [...prev, msg]);
+      }
+    };
+    socket.on('message:new', onNew);
+    return () => {
+      socket.off('message:new', onNew);
+    };
   }, [isOpen, user, currentUser]);
 
   useEffect(() => {
@@ -64,23 +70,26 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
   }, [messages, user]);
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() && user && currentUser) {
+    if (!user || !currentUser) return;
+    if (attachment) {
+      try {
+        const msg = await ApiService.sendImageMessage(currentUser.uid, String(user._id || user.id), attachment);
+        setMessages(prev => [...prev, msg]);
+        setAttachment(null);
+      } catch (err: any) {
+        setError('Unable to send image at this time.');
+      }
+      return;
+    }
+    if (newMessage.trim()) {
       const messageToSend = newMessage.trim();
-      setNewMessage(""); // Clear immediately
+      setNewMessage("");
       setError(null);
       try {
-        await addDoc(collection(db, 'messages'), {
-          senderId: currentUser.uid,
-          receiverId: user._id || user.id.toString(),
-          participants: [currentUser.uid, user._id || user.id.toString()],
-          content: messageToSend,
-          timestamp: serverTimestamp(),
-          read: false,
-        });
+        const msg = await ApiService.sendMessage(currentUser.uid, String(user._id || user.id), messageToSend);
+        setMessages(prev => [...prev, msg]);
       } catch (err: any) {
         setError('Unable to send message at this time. Please try again.');
-        // Optionally restore the message if send failed
-        // setNewMessage(messageToSend);
       }
     }
   };
@@ -97,26 +106,8 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
   };
 
   const handleClearChat = async () => {
-    if (!user || !currentUser) return;
-    try {
-    const q = query(
-      collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid),
-      orderBy('timestamp', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    const batch = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-        if (Array.isArray(data.participants) && data.participants.includes(user._id || user.id.toString()) && data.participants.includes(currentUser.uid)) {
-        batch.push(deleteDoc(doc.ref));
-      }
-    });
-    await Promise.all(batch);
+    // Optional: implement a delete endpoint later
     setMessages([]);
-    } catch (err) {
-      setError('Failed to clear chat.');
-    }
   };
 
   if (!isOpen || !user) return null;
@@ -157,22 +148,26 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
         <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 space-y-2 flex flex-col bg-black" ref={messagesContainerRef}>
           {loading && <div className="text-purple-300 text-center text-sm">Loading messages...</div>}
           {error && <div className="text-red-400 text-center text-sm">{error}</div>}
-          {messages.map((message) => (
+          {messages.map((message: any) => (
             <div
-                      key={message.id}
-                      className={`flex ${message.senderId === currentUser?.uid ? "justify-end" : "justify-start"}`}
+                      key={message._id || message.id}
+                      className={`flex ${message.from === currentUser?.uid ? "justify-end" : "justify-start"}`}
                     >
               <div
                 className={`rounded-xl px-3 sm:px-4 py-2 shadow text-xs sm:text-sm relative break-words whitespace-pre-line max-w-full"
-                  ${message.senderId === currentUser?.uid
+                  ${message.from === currentUser?.uid
                     ? "bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-br-none border border-purple-700"
                     : "bg-black text-white rounded-bl-none border border-purple-900"}
                 `}
                 style={{ maxWidth: '85%' }}
               >
-                <span>{message.content}</span>
+                {message.type === 'image' && message.mediaUrl ? (
+                  <img src={message.mediaUrl} alt="attachment" className="max-w-full rounded-md border border-purple-900" />
+                ) : (
+                  <span>{message.text || message.content}</span>
+                )}
                 <span className="block text-[8px] sm:text-[10px] text-purple-200 text-right mt-1">
-                            {message.timestamp?.toDate ? message.timestamp.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                            {message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                     </span>
               </div>
             </div>
@@ -180,6 +175,13 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
         </div>
         {/* Input */}
         <div className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-black border-t border-purple-900 rounded-b-xl sm:rounded-b-2xl">
+          <label className="cursor-pointer text-white/80 hover:text-white hover:bg-purple-900/30 rounded-full p-1" title="Attach image">
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => setAttachment(e.target.files?.[0] || null)} />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path d="M9 12.75a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75Z" />
+              <path fillRule="evenodd" d="M3.374 7.126a4.5 4.5 0 0 1 6.364 0l7.136 7.137a3 3 0 1 1-4.243 4.243l-5.303-5.303a1.5 1.5 0 0 1 2.121-2.121l4.243 4.243a.75.75 0 1 0 1.06-1.06l-4.242-4.244a3 3 0 1 0-4.243 4.243l5.303 5.303a4.5 4.5 0 1 0 6.364-6.364L9.738 5.005a6 6 0 1 0-8.485 8.485l5.304 5.303a.75.75 0 1 0 1.06-1.06L2.313 12.43a4.5 4.5 0 0 1 0-6.364Z" clipRule="evenodd" />
+            </svg>
+          </label>
                   <Input
                     value={newMessage}
             onChange={e => setNewMessage(e.target.value)}
@@ -189,7 +191,7 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
                   />
           <button
                         onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || loading}
+                        disabled={!newMessage.trim() && !attachment || loading}
             className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
                       >

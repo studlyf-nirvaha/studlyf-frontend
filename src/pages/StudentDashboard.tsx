@@ -5,7 +5,7 @@ import { SplitText } from '@/components/ui/split-text';
 import { useAuth } from '@/lib/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getUserProfile, updateUserProfile } from '@/lib/api';
+import { getUserProfile, updateUserProfile, ApiService } from '@/lib/api';
 import Lenis from 'lenis';
 
 interface EditProfileData {
@@ -77,12 +77,13 @@ export default function StudentProfileDashboard() {
   const [selectedItem, setSelectedItem] = useState(null);
   // Stepper state moved to top level
   const [step, setStep] = useState(0);
+  const [visibleProjectsCount, setVisibleProjectsCount] = useState(1);
   const steps = [
     'Basic Info',
     'Education & Skills',
     'Profile & Preferences',
     'Contact & Social',
-    'Uploads',
+    'Projects & Certificates',
   ];
   const [saving, setSaving] = useState(false);
 
@@ -159,7 +160,12 @@ export default function StudentProfileDashboard() {
       resumeFiles: profile?.resumeFiles || [],
       projectFiles: profile?.projectFiles || [],
       certificationFiles: profile?.certificationFiles || [],
+      // preload projects array if present
+      ...(profile?.projects ? { projects: profile.projects } : {}),
     });
+    // initialize visible projects based on existing projects length
+    const existingCount = Array.isArray((profile as any)?.projects) ? (profile as any).projects.length : 0;
+    setVisibleProjectsCount(Math.max(1, Math.min(existingCount || 1, 6)));
     setStep(0);
     setEditOpen(true);
   };
@@ -277,8 +283,8 @@ export default function StudentProfileDashboard() {
       });
     } else if (step === 4) {
       result = await saveStepData({
-        projectFiles: editData.projectFiles,
-        certificationFiles: editData.certificationFiles,
+        projects: (editData as any).projects || [],
+        certificationFiles: (editData as any).certificationFiles || [],
       });
     }
     if (!result?.success) {
@@ -455,19 +461,24 @@ export default function StudentProfileDashboard() {
                 </div>
               ) : <span className="text-white/60 text-sm">None</span>}
             </div>
-            {/* Projects */}
+            {/* Projects (display saved projects array) */}
             <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
               <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Projects</h3>
-              {Array.isArray(profile?.projectFiles) && profile.projectFiles.length > 0 ? (
-                <ul className="space-y-1">
-                  {profile.projectFiles.map((file, idx) => (
-                    <li key={idx} className="flex items-center gap-1">
-                      <FileText className="w-4 h-4 text-[#ff7eb3]" />
-                      <a href={file.url || file} target="_blank" rel="noopener noreferrer" className="text-white/90 underline text-base">{file.name || file}</a>
+              {Array.isArray((profile as any)?.projects) && (profile as any).projects.length > 0 ? (
+                <ul className="space-y-2">
+                  {(profile as any).projects.map((p, idx) => (
+                    <li key={idx} className="text-white/90 text-sm border border-white/10 rounded p-2">
+                      <div className="font-bold mb-1">Project {idx + 1}</div>
+                      <div className="flex flex-wrap gap-3">
+                        {p.githubUrl && <a className="underline text-[#a259ff]" href={p.githubUrl} target="_blank" rel="noopener noreferrer">GitHub</a>}
+                        {p.liveUrl && <a className="underline text-[#ff7eb3]" href={p.liveUrl} target="_blank" rel="noopener noreferrer">Live</a>}
+                        {p.youtubeUrl && <a className="underline text-white/80" href={p.youtubeUrl} target="_blank" rel="noopener noreferrer">YouTube</a>}
+                      </div>
+                      {p.description && <div className="text-white/70 mt-1">{p.description}</div>}
                     </li>
                   ))}
                 </ul>
-              ) : <span className="text-white/60 text-sm">No projects uploaded.</span>}
+              ) : <span className="text-white/60 text-sm">No projects added.</span>}
             </div>
             {/* Certifications */}
             <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
@@ -651,59 +662,86 @@ export default function StudentProfileDashboard() {
                   </div>
                 </div>
               )}
-              {/* Step 5: Uploads */}
+              {/* Step 5: Projects & Certificates */}
               {step === 4 && (
                 <div className="space-y-4">
-                  <h3 className="text-white/90 text-lg font-extrabold mb-2 border-b border-[#a259ff44] pb-2 tracking-wide">Uploads</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="w-full">
-                      <label className="block text-white/90 mb-3 font-bold text-lg">Project Files</label>
-                      <input type="file" multiple className="block w-full text-white bg-[#23272f] rounded p-2" onChange={e => setEditData({ ...editData, projectFiles: Array.from(e.target.files).map(f => f.name) })} />
-                      {editData.projectFiles && editData.projectFiles.length > 0 && (
-                        <ul className="mt-2 text-white/80 text-sm list-disc list-inside">
-                          {editData.projectFiles.map((file, idx) => <li key={idx}>{file}</li>)}
-                        </ul>
-                      )}
-                    </div>
-                    <div className="w-full">
-                      <label className="block text-white/90 mb-3 font-bold text-lg">Certification Names</label>
-                      {editData.certificationFiles && editData.certificationFiles.length > 0 && (
-                        <ul className="mt-2 text-white/80 text-sm list-disc list-inside">
-                          {editData.certificationFiles.map((cert, idx) => (
-                            <li key={idx} className="flex items-center gap-2 mb-2">
-                              <input
-                                type="text"
-                                className="p-2 rounded bg-[#23272f] text-white w-full font-semibold text-base"
-                                placeholder={`Certificate Name ${idx + 1}`}
-                                value={cert}
-                                onChange={e => {
-                                  const newCerts = [...editData.certificationFiles];
-                                  newCerts[idx] = e.target.value;
-                                  setEditData({ ...editData, certificationFiles: newCerts });
-                                }}
-                              />
-                              <button
-                                type="button"
-                                className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 font-bold"
-                                onClick={() => {
-                                  const newCerts = editData.certificationFiles.filter((_, i) => i !== idx);
-                                  setEditData({ ...editData, certificationFiles: newCerts });
-                                }}
-                                title="Remove"
-                              >
-                                &minus;
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                  <h3 className="text-white/90 text-lg font-extrabold mb-2 border-b border-[#a259ff44] pb-2 tracking-wide">Projects & Certificates</h3>
+                  {/* Projects: GitHub, Live, YouTube, Description */}
+                  <div className="space-y-3">
+                    {Array.from({ length: Math.min(visibleProjectsCount, 6) }).map((_, idx) => (
+                      <div key={idx} className="border border-[#a259ff55] rounded-lg p-3 bg-[#23272f]">
+                        <div className="text-white/80 font-bold mb-2">Project {idx + 1}</div>
+                        <input className="p-2 rounded bg-black/40 text-white w-full font-semibold text-sm mb-2" placeholder="GitHub URL" value={(editData as any).projects?.[idx]?.githubUrl || ''} onChange={e => {
+                          const projects = [ ...((editData as any).projects || []) ];
+                          projects[idx] = { ...(projects[idx] || {}), githubUrl: e.target.value };
+                          setEditData({ ...(editData as any), projects });
+                        }} />
+                        <input className="p-2 rounded bg-black/40 text-white w-full font-semibold text-sm mb-2" placeholder="Deployed Link" value={(editData as any).projects?.[idx]?.liveUrl || ''} onChange={e => {
+                          const projects = [ ...((editData as any).projects || []) ];
+                          projects[idx] = { ...(projects[idx] || {}), liveUrl: e.target.value };
+                          setEditData({ ...(editData as any), projects });
+                        }} />
+                        <input className="p-2 rounded bg-black/40 text-white w-full font-semibold text-sm mb-2" placeholder="YouTube URL" value={(editData as any).projects?.[idx]?.youtubeUrl || ''} onChange={e => {
+                          const projects = [ ...((editData as any).projects || []) ];
+                          projects[idx] = { ...(projects[idx] || {}), youtubeUrl: e.target.value };
+                          setEditData({ ...(editData as any), projects });
+                        }} />
+                        <textarea className="p-2 rounded bg-black/40 text-white w-full font-semibold text-sm" placeholder="Description" rows={2} value={(editData as any).projects?.[idx]?.description || ''} onChange={e => {
+                          const projects = [ ...((editData as any).projects || []) ];
+                          projects[idx] = { ...(projects[idx] || {}), description: e.target.value };
+                          setEditData({ ...(editData as any), projects });
+                        }} />
+                      </div>
+                    ))}
+                    {visibleProjectsCount < 6 && (
                       <button
                         type="button"
-                        className="mt-2 bg-[#a259ff] text-white px-4 py-2 rounded font-extrabold hover:bg-[#7e3fff] transition text-base"
-                        onClick={() => setEditData({ ...editData, certificationFiles: [...(editData.certificationFiles || []), ""] })}
+                        className="mt-1 bg-[#a259ff] text-white px-4 py-2 rounded font-extrabold hover:bg-[#7e3fff] transition text-base"
+                        onClick={() => {
+                          setEditData(prev => {
+                            const next = { ...(prev as any) } as any;
+                            const projects = [ ...(next.projects || []) ];
+                            if (projects.length < visibleProjectsCount + 1) {
+                              projects.push({ githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' });
+                            }
+                            next.projects = projects;
+                            return next;
+                          });
+                          setVisibleProjectsCount(c => Math.min(c + 1, 6));
+                        }}
                       >
-                        + Add Certificate
+                        + Add Project
                       </button>
+                    )}
+                  </div>
+                  {/* Certificates: image URLs list that open in new tab */}
+                  <div className="mt-4">
+                    <div className="text-white/90 font-bold mb-2">Certificates</div>
+                    <div className="flex flex-wrap gap-3">
+                      {Array.isArray((editData as any).certificationFiles) && (editData as any).certificationFiles.map((url, idx) => (
+                        <div key={idx} className="relative">
+                          <img src={url} alt={`Certificate ${idx+1}`} className="w-24 h-24 object-cover rounded border border-white/20 cursor-pointer" onClick={() => window.open(url, '_blank')} />
+                          <button type="button" className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 text-xs" onClick={() => {
+                            const arr = ((editData as any).certificationFiles || []).filter((_, i) => i !== idx);
+                            setEditData({ ...(editData as any), certificationFiles: arr });
+                          }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex items-center gap-3">
+                      <input type="file" accept="image/*" onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const uploaded = await ApiService.uploadCertificateImage(file);
+                          setEditData(prev => ({ ...(prev as any), certificationFiles: [ ...(((prev as any).certificationFiles) || []), uploaded.url ] }));
+                        } catch (err) {
+                          alert('Upload failed');
+                        } finally {
+                          e.currentTarget.value = '';
+                        }
+                      }} className="text-white" />
+                      <span className="text-white/70 text-sm">Upload image; click thumbnail to open</span>
                     </div>
                   </div>
                 </div>
