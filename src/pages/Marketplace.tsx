@@ -43,14 +43,13 @@ const categories = [
 
 const conditions = ["New", "Like New", "Good", "Fair", "Poor"];
 
-const cardBlack = "#23232a"; // Medium shade of black for card
+const cardBlack = "#000000";
 
 const Marketplace = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [showListingForm, setShowListingForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Listings as state
   const [listings, setListings] = useState([
     {
       id: 1,
@@ -85,7 +84,6 @@ const Marketplace = () => {
     // For mount animation or future use
   }, []);
 
-  // Filter by category and search term
   const filteredListings = listings.filter((listing) => {
     const matchesCategory =
       selectedCategory === "All Categories" ||
@@ -96,7 +94,6 @@ const Marketplace = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Add new listing to state
   const handleCreateListing = (formData: any) => {
     setShowListingForm(false);
     const newId = listings.length
@@ -155,8 +152,7 @@ const Marketplace = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Search for books, electronics, tickets..."
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-[#232A4D] text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-              style={{ background: "#232A4D" }}
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-[#000000] text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
             />
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400">
               <Search size={20} />
@@ -171,9 +167,10 @@ const Marketplace = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
-                  className="absolute top-2 right-2 text-white"
+                  className="absolute top-2 right-2 text-white hover:text-red-500 transition-colors"
                   onClick={() => setShowListingForm(false)}
                   aria-label="Close"
+                  type="button"
                 >
                   <X size={24} />
                 </button>
@@ -276,7 +273,7 @@ const Marketplace = () => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-blue-700 hover:bg-blue-600 text-white font-semibold"
+                    className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg transition"
                   >
                     Create Listing
                   </Button>
@@ -290,11 +287,11 @@ const Marketplace = () => {
             {categories.map((category) => (
               <button
                 key={category}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full font-medium text-base shadow transition-all duration-200 border
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-medium text-base shadow transition-all duration-200
                   ${
                     selectedCategory === category
-                      ? "bg-blue-700 text-white border-transparent shadow-lg"
-                      : "bg-[#23232a] text-white/80 border-transparent hover:border-blue-400"
+                      ? "bg-blue-700 text-white border border-blue-600 shadow-lg"
+                      : "bg-black text-white/70 border border-white/10 hover:border-blue-400"
                   }
                 `}
                 onClick={() => setSelectedCategory(category)}
@@ -314,13 +311,10 @@ const Marketplace = () => {
                   scale: 1.02,
                   boxShadow: "0 6px 40px 0 rgba(50,90,255,0.16)",
                 }}
-                className="rounded-2xl shadow-2xl border border-white/10 p-7 flex flex-col md:flex-row items-center gap-6 relative transition"
-                style={{
-                  background: cardBlack,
-                }}
+                className="rounded-2xl border border-white/10 bg-black shadow-lg shadow-black/50 p-7 flex flex-col md:flex-row items-center gap-6 relative transition"
               >
                 {/* Image */}
-                <div className="w-24 h-24 flex items-center justify-center bg-[#23232a] rounded-full shadow-lg border border-blue-600/20 overflow-hidden">
+                <div className="w-24 h-24 flex items-center justify-center bg-black rounded-full shadow-lg border border-blue-600/20 overflow-hidden">
                   {typeof listing.image === "string" ? (
                     <img
                       src={listing.image}
@@ -345,7 +339,7 @@ const Marketplace = () => {
                     <span className="px-3 py-1 rounded-full bg-blue-900 text-blue-200 text-xs font-semibold">
                       {listing.category}
                     </span>
-                    <span className="px-3 py-1 rounded-full bg-[#23232a] text-white/80 text-xs">
+                    <span className="px-3 py-1 rounded-full bg-black text-white/80 text-xs border border-white/10">
                       {listing.condition}
                     </span>
                   </div>
@@ -361,7 +355,7 @@ const Marketplace = () => {
                       <a
                         href={listing.download}
                         download
-                        className="bg-blue-600 hover:bg-blue-700 transition-colors px-6 py-2 rounded-full font-bold text-white text-base shadow"
+                        className="bg-blue-700 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg transition"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Download
@@ -371,7 +365,7 @@ const Marketplace = () => {
                         href="https://wa.me/9182591431?text=Hi%2C%20I%20am%20interested%20in%20buying%20the%20Skullcandy%20product%20listed%20on%20StudLYF%20Marketplace."
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-blue-700 hover:bg-blue-600 transition-colors px-6 py-2 rounded-full font-bold text-white text-base shadow"
+                        className="bg-blue-700 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg transition"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Buy Now
@@ -379,7 +373,7 @@ const Marketplace = () => {
                     )}
                     {listing.category === "Books" && (
                       <button
-                        className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-900 text-blue-200 hover:bg-blue-800 transition-colors shadow"
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-700 hover:bg-blue-600 text-white transition-colors shadow-lg"
                         title="Favorite"
                       >
                         <Heart size={20} />

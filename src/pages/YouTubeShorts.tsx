@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -9,54 +9,44 @@ import { Search, Filter } from 'lucide-react';
 import { SplitText } from "@/components/ui/split-text";
 import TrendingContent from '@/components/TrendingContent';
 
+const API_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001") + "/youtube-shorts";
+
 const YouTubeShorts = () => {
+  const [shorts, setShorts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [openIndex, setOpenIndex] = useState(null);
 
   const categories = ['All', 'Tech', 'Finance', 'Entrepreneurship', 'Study Tips', 'Career'];
 
-  // YouTube Shorts links provided by the user
-  const youtubeShortLinks = [
-    "https://youtube.com/shorts/l_AEy1e1u6w?si=RmIrYYCN_ufL24nt",
-    "https://youtube.com/shorts/c3r2EyhtAFI?si=MnuOpdd06OuliEN6",
-    "https://youtube.com/shorts/Mz_B2h3CCXo?si=7DuNJi2cgKAMd38o",
-    "https://youtube.com/shorts/rNXpauB6t_A?si=XUhBFkGmgpaNoA3B",
-    "https://youtube.com/shorts/zYkF1X2bBRk?si=tNIV2CluTxePQ5Ri",
-    "https://youtube.com/shorts/nVhBrCeUC8s?si=kBoyBe9n10b9Eo8o",
-    "https://youtube.com/shorts/aOUPycUS5lw?si=iDSA0WBvKXl7Uch8",
-    "https://youtube.com/shorts/49sGbt1_QPI?si=R-uUKsqB8KfgPTOQ",
-    "https://youtube.com/shorts/gm3ITLOJkFc?si=3E9s8RYLx2li-wAp",
-    "https://youtube.com/shorts/R11oxDWg-u0?si=loVP1QJdQCp0GApe",
-    "https://youtube.com/shorts/V2p80e98l9E?si=lXs6ZV_h3vZSu4KK",
-    "https://youtube.com/shorts/c2ED0LZ4pCk?si=nGXn6PVYau979Nh-",
-    "https://youtube.com/shorts/W8kG3vFjBOY?si=hdTrMdryGNS5cJKJ",
-    "https://youtube.com/shorts/R4psUPXzLSs?si=lCXlLSfRVsx_M3vT",
-    "https://youtube.com/shorts/xQHJOjr2sho?si=oIDaSOlJskQDD0l7",
-    "https://youtube.com/shorts/TkV_iq-UbO0?si=LagYtLJPMxykgmqJ",
-    "https://youtube.com/shorts/hpmYP_gQNu8?si=mfycEODumUBPire-",
-    "https://youtube.com/shorts/LMDA5Ip4PYY?si=QB7-YcI1Sj07tc6o",
-    "https://youtube.com/shorts/obER3ncpH2I?si=mfgzX0wiUvnqpoWG",
-    "https://youtube.com/shorts/CeCitNDHNV0?si=BzaQuVS9qDFDT967",
-    "https://youtube.com/shorts/TCdgKpRPwOM?si=xm2saKeCKSugPJgk",
-    "https://youtube.com/shorts/B6z8QpeS2-Q?si=v-sCMUmsvoumGm0O",
-    "https://youtube.com/shorts/5B4OiFm48Tw?si=JZuDf3e58jLEgXHZ",
-    "https://youtube.com/shorts/zey9DSS1LOU?si=sHGvK6XeQPaODTK0",
-    "https://youtube.com/shorts/FbtYxPUrhq8?si=FtakJG-HDX2MeoaU"
-  ];
+  useEffect(() => {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        setShorts(data.shorts || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-  // Helper to extract the video ID from a shorts URL
-  function getShortsId(url) {
-    const match = url.match(/shorts\/([\w-]+)/);
-    return match ? match[1] : null;
+  // Helper to extract the video ID from a YouTube watch URL
+  function getVideoId(url: string) {
+    // Handles both watch?v= and shorts/ URLs
+    const watchMatch = url.match(/v=([\w-]+)/);
+    if (watchMatch) return watchMatch[1];
+    const shortsMatch = url.match(/shorts\/([\w-]+)/);
+    if (shortsMatch) return shortsMatch[1];
+    return null;
   }
 
-  const allShorts = youtubeShortLinks.map((url, idx) => {
-    const id = getShortsId(url);
+  const allShorts = shorts.map((short: any, idx: number) => {
+    const id = getVideoId(short.video_url);
     return {
       id: id || idx,
-      url,
-      thumbnail: id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '',
+      url: short.video_url,
+      thumbnail: short.thumbnail,
+      title: short.title,
     };
   });
 
@@ -64,6 +54,14 @@ const YouTubeShorts = () => {
     // Optionally, add search/category filtering here if needed
     return true;
   });
+
+  if (loading) {
+    return <div className="text-center text-white py-12">Loading Shorts...</div>;
+  }
+
+  if (!shorts.length) {
+    return <div className="text-center text-white py-12">No Shorts Found.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">

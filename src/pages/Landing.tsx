@@ -9,7 +9,7 @@ import HowitwImg from "../Howitw.jpg";
 // You should place your animation video (e.g., mp4, webm) in your public folder or import it.
 // Example: import heroVideo from "../videos/your-3d-hero-animation.mp4";
 // For now, we'll use a public folder path:
-const heroVideo = "/animi/3d-hero-animation.mp4"; // <-- update with your actual video path
+const heroVideo = "/animi/loop-animation.mp4"; // <-- update with your actual video path
 
 const Landing = () => {
   const [mounted, setMounted] = useState(false);

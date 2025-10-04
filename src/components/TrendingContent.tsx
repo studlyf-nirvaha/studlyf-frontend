@@ -1,122 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ArrowRight } from "lucide-react";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
+const BLOGS_API_URL = "http://localhost:5001/blogs";
+const SHORTS_API_URL = "http://localhost:5001/youtube-shorts";
+
 const TrendingContent = () => {
   const navigate = useNavigate();
   const [openIndex, setOpenIndex] = useState(null);
   const [openBlogIndex, setOpenBlogIndex] = useState(null);
 
-  // Sample data
-  const [youtubeShorts] = useState([
-    {
-      id: 1,
-      title: "How to Land Your First Tech Internship",
-      thumbnail: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
-      views: "125K",
-      creator: "Tech Career Tips"
-    },
-    {
-      id: 2,
-      title: "5 Financial Hacks Every Student Should Know",
-      thumbnail: "https://images.unsplash.com/photo-1579621970795-87facc2f976d",
-      views: "89K",
-      creator: "Student Finance"
-    },
-    {
-      id: 3,
-      title: "Day in the Life of a Student Entrepreneur",
-      thumbnail: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
-      views: "210K",
-      creator: "StartupLife"
-    },
-    {
-      id: 4,
-      title: "Quick Tips for Better Productivity",
-      thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71",
-      views: "67K",
-      creator: "ProductivityPro"
-    },
-    {
-      id: 5,
-      title: "Best Study Techniques for Exams",
-      thumbnail: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173",
-      views: "156K",
-      creator: "StudySmart"
-    }
-  ]);
+  // Fetch blogs from API
+  const [blogLinks, setBlogLinks] = useState<any[]>([]);
+  useEffect(() => {
+    fetch(BLOGS_API_URL)
+      .then(res => res.json())
+      .then(data => {
+        const blogs = (data.blogs || []).slice(0, 5).map((blog: any) => ({
+          title: blog.title,
+          url: blog.url,
+          image: blog.urlToImage || '/blog-placeholder.png',
+        }));
+        setBlogLinks(blogs);
+      });
+  }, []);
 
-  // Updated blogLinks with correct titles and images for the provided blogs
-  const blogLinks = [
-    {
-      url: "https://theknowledgereviewmagazine.in/the-rise-of-skill-based-education-in-india/",
-      title: "The Rise of Skill-Based Education in India",
-      image: "/blog5.png",
-    },
-    {
-      url: "https://blog.google/technology/ai/google-ai-updates-june-2025/",
-      title: "Google AI Updates June 2025",
-      image: "/blog4.png",
-    },
-    {
-      url: "https://blog.google/outreach-initiatives/entrepreneurs/ai-for-education-cohort/",
-      title: "AI for Education Cohort by Google",
-      image: "/blog3.png",
-    },
-    {
-      url: "https://blog.google/products/gemini/google-gemini-learning-features/",
-      title: "Google Gemini Learning Features",
-      image: "/blog2.png",
-    },
-    {
-      url: "https://blog.google/outreach-initiatives/google-org/google-cybersecurity-investments-june-2024/",
-      title: "Google Cybersecurity Investments June 2024",
-      image: "/blog1.png",
-    },
-    {
-      url: "https://www.financialexpress.com/industry/education-2/",
-      title: "Financial Express: Education & Finance"
-    },
-    {
-      url: "https://www.moneycontrol.com/news/business/personal-finance/",
-      title: "Moneycontrol: Personal Finance Blog"
-    },
-    {
-      url: "https://www.investopedia.com/financial-advisor-blog-5180723",
-      title: "Investopedia: Financial Advisor Blog"
-    },
-    {
-      url: "https://www.npr.org/sections/ed/",
-      title: "NPR: Education Blog"
-    },
-    {
-      url: "https://www.nerdwallet.com/blog/",
-      title: "NerdWallet: Personal Finance Blog"
-    }
-  ];
-
-  // Podcasts section removed
-
-  // YouTube Shorts links provided by the user
-  const youtubeShortLinks = [
-    "https://youtube.com/shorts/l_AEy1e1u6w?si=RmIrYYCN_ufL24nt",
-    "https://youtube.com/shorts/c3r2EyhtAFI?si=MnuOpdd06OuliEN6",
-    "https://youtube.com/shorts/Mz_B2h3CCXo?si=7DuNJi2cgKAMd38o",
-    "https://youtube.com/shorts/rNXpauB6t_A?si=XUhBFkGmgpaNoA3B",
-    "https://youtube.com/shorts/zYkF1X2bBRk?si=tNIV2CluTxePQ5Ri",
-    "https://youtube.com/shorts/nVhBrCeUC8s?si=kBoyBe9n10b9Eo8o",
-    "https://youtube.com/shorts/aOUPycUS5lw?si=iDSA0WBvKXl7Uch8",
-    // ... more links for the YouTube Shorts page
-  ];
-
-  // Helper to extract the video ID from a shorts URL
-  function getShortsId(url) {
-    const match = url.match(/shorts\/([\w-]+)/);
-    return match ? match[1] : null;
-  }
+  // Fetch YouTube Shorts from API
+  const [shortLinks, setShortLinks] = useState<any[]>([]);
+  useEffect(() => {
+    fetch(SHORTS_API_URL)
+      .then(res => res.json())
+      .then(data => {
+        // Map API shorts to { id, title, thumbnail, video_url }
+        const shorts = (data.shorts || []).slice(0, 10).map((short: any, idx: number) => {
+          // Extract video ID from video_url
+          const match = short.video_url.match(/v=([\w-]+)/);
+          const id = match ? match[1] : idx;
+          return {
+            id,
+            title: short.title,
+            thumbnail: short.thumbnail,
+            video_url: short.video_url,
+          };
+        });
+        setShortLinks(shorts);
+      });
+  }, []);
 
   return (
     <>
@@ -142,37 +74,33 @@ const TrendingContent = () => {
           </div>
           <ScrollArea className="w-full whitespace-nowrap scroll-smooth">
             <div className="flex space-x-4 sm:space-x-8 pb-4">
-              {youtubeShortLinks.slice(0, 7).map((url, idx) => {
-                const id = getShortsId(url);
-                const thumbnail = id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
-                return (
-                  <button
-                    key={id || idx}
-                    type="button"
-                    onClick={() => setOpenIndex(idx)}
-                    className="group cursor-pointer flex-shrink-0 w-[150px] sm:w-[130px] md:w-[140px] lg:w-[160px] xl:w-[180px] flex flex-col items-center bg-transparent border-none p-0"
-                    style={{ outline: 'none' }}
-                  >
-                    <div className="relative w-full rounded-xl overflow-hidden shadow-lg border border-white/10 bg-white" style={{ aspectRatio: '9/16', minHeight: 150 }}>
-                      <img
-                        src={thumbnail}
-                        alt="YouTube Short Thumbnail"
-                        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
-                        style={{ aspectRatio: '9/16' }}
-                      />
-                      {/* Overlay for YouTube Shorts style */}
-                      <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-end pointer-events-none">
-                        <div className="flex justify-center pb-2">
-                          <span className="bg-black/70 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                            Watch
-                          </span>
-                        </div>
+              {shortLinks.map((short, idx) => (
+                <button
+                  key={short.id}
+                  type="button"
+                  onClick={() => setOpenIndex(idx)}
+                  className="group cursor-pointer flex-shrink-0 w-[150px] sm:w-[130px] md:w-[140px] lg:w-[160px] xl:w-[180px] flex flex-col items-center bg-transparent border-none p-0"
+                  style={{ outline: 'none' }}
+                >
+                  <div className="relative w-full rounded-xl overflow-hidden shadow-lg border border-white/10 bg-white" style={{ aspectRatio: '9/16', minHeight: 150 }}>
+                    <img
+                      src={short.thumbnail}
+                      alt={short.title}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                      style={{ aspectRatio: '9/16' }}
+                    />
+                    {/* Overlay for YouTube Shorts style */}
+                    <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-end pointer-events-none">
+                      <div className="flex justify-center pb-2">
+                        <span className="bg-black/70 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                          Watch
+                        </span>
                       </div>
                     </div>
-                  </button>
-                );
-              })}
+                  </div>
+                </button>
+              ))}
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -193,8 +121,8 @@ const TrendingContent = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
               <iframe
-                src={`https://www.youtube.com/embed/${getShortsId(youtubeShortLinks[openIndex])}?autoplay=1&modestbranding=1&rel=0&playsinline=1`}
-                title="YouTube Short"
+                src={`https://www.youtube.com/embed/${shortLinks[openIndex].id}?autoplay=1&modestbranding=1&rel=0&playsinline=1`}
+                title={shortLinks[openIndex].title}
                 allow="autoplay; encrypted-media"
                 allowFullScreen
                 className="w-full h-full rounded-xl"
@@ -228,18 +156,20 @@ const TrendingContent = () => {
           </div>
           <ScrollArea className="w-full whitespace-nowrap scroll-smooth">
             <div className="flex space-x-4 sm:space-x-8 pb-4">
-              {blogLinks.slice(0, 5).map((blog, idx) => (
-                <button
+              {blogLinks.map((blog) => (
+                <a
                   key={blog.url}
-                  type="button"
-                  onClick={() => setOpenBlogIndex(idx)}
+                  href={blog.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="group cursor-pointer flex-shrink-0 w-[300px] sm:w-[340px] md:w-[380px] lg:w-[420px] xl:w-[460px] bg-white rounded-2xl shadow-lg overflow-hidden border-none p-0 text-left"
                   style={{ outline: 'none' }}
                 >
                   <div className="w-full h-56 bg-gray-200 flex items-center justify-center overflow-hidden">
-                    <img src={blog.image || '/public/placeholder.svg'} alt={blog.title} className="w-full h-full object-cover" />
+                    <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
                   </div>
-                </button>
+                  <div className="p-4 text-black font-semibold text-lg truncate">{blog.title}</div>
+                </a>
               ))}
             </div>
             <ScrollBar orientation="horizontal" />

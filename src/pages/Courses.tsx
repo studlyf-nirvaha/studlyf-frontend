@@ -116,7 +116,7 @@ const Courses = () => {
                   <li>• Beginner-friendly and advanced tracks</li>
                   <li>• Contribution tips and community links</li>
                 </ul>
-                <Link to="/projects">
+                <Link to="/Projects">
                   <Button className="bg-gradient-to-r from-purple-400 to-pink-400 hover:opacity-90 w-full">
                     Explore Projects
                   </Button>

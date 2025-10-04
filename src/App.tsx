@@ -36,6 +36,7 @@ import { Navigate } from "react-router-dom";
 import Studverse from "./pages/Studverse";
 import Profile from "./pages/Profile";
 import Certifications from "./pages/Certifications";
+import Projects from "@/pages/Projects"; // <-- Add this import
 
 const queryClient = new QueryClient();
 
@@ -102,7 +103,7 @@ const AppContent: React.FC = () => {
         <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
         <Route path="/project-hunt" element={<ProtectedRoute><ProjectHunt /></ProtectedRoute>} />
         <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
-        <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+        { <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} /> }
         <Route path="/blogs" element={<ProtectedRoute><Blogs /></ProtectedRoute>} />
         <Route path="/scholarships" element={<ProtectedRoute><Scholarships /></ProtectedRoute>} />
         <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
@@ -117,6 +118,7 @@ const AppContent: React.FC = () => {
         <Route path="/student-discounts" element={<ProtectedRoute><StudentDiscounts /></ProtectedRoute>} />
         <Route path="/studverse" element={<ProtectedRoute><Studverse /></ProtectedRoute>} />
         <Route path="/certifications" element={<ProtectedRoute><Certifications /></ProtectedRoute>} />
+        <Route path="/Projects" element={<Projects />} /> {/* <-- Add this route */}
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
