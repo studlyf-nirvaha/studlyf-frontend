@@ -135,30 +135,53 @@ const Network = () => {
     });
   }, [users, searchTerm, selectedInterest, selectedSkills, selectedStatuses, connectionView, connections, userId]);
 
-  // Pagination logic (must come after filteredUsers is defined)
-  const currentList = useMemo(() => {
+  // Build base list (respecting filters and connectionView) and split into recommended vs remaining
+  const baseUsers = useMemo(() => {
     const base = showConnectionsOnly
       ? users.filter(u => connections.includes(u._id))
       : filteredUsers;
-    return shuffleArray(base); // Shuffle the cards for randomness
+    // Only include users with essential profile fields
+    return base.filter((user: NetworkUser) => Boolean(user.firstName && user.skills && user.skills.length > 0 && user.college));
   }, [users, filteredUsers, showConnectionsOnly, connections]);
 
-  const validUsers = currentList.filter((user: NetworkUser) => {
-    // Only show users who have filled firstName, skills, and college
-    return Boolean(user.firstName && user.skills && user.skills.length > 0 && user.college);
-  });
-  const totalPages = Math.max(1, Math.ceil(validUsers.length / CARDS_PER_PAGE)); // Only count valid users for pagination
-  // validUsers already declared above
-  const paginatedUsers = validUsers.slice(
-    (currentPage - 1) * CARDS_PER_PAGE,
-    currentPage * CARDS_PER_PAGE
-  );
+  const { recommendedUsers, remainingUsers } = useMemo(() => {
+    const currentCollege = (profileData?.college || '').trim().toLowerCase();
+    const mySkills: string[] = Array.isArray(profileData?.skills) ? (profileData.skills as string[]) : [];
+    const mySkillSet = new Set(mySkills.map(s => (s || '').toLowerCase()));
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages); // Adjust current page if it exceeds total pages
+    const sameCollege: NetworkUser[] = [];
+    const sameSkillsAtLeastTwo: NetworkUser[] = [];
+    const seen = new Set<string>();
+
+    for (const u of baseUsers) {
+      const uid = u._id;
+      if (!uid) continue;
+      const uCollege = (u.college || '').trim().toLowerCase();
+      const uSkills: string[] = Array.isArray(u.skills) ? u.skills : [];
+      const overlap = uSkills.reduce((acc, s) => acc + (mySkillSet.has((s || '').toLowerCase()) ? 1 : 0), 0);
+
+      if (currentCollege && uCollege === currentCollege) {
+        sameCollege.push(u);
+        seen.add(uid);
+        continue;
+      }
+
+      if (mySkillSet.size > 0 && overlap >= 2) {
+        sameSkillsAtLeastTwo.push(u);
+        seen.add(uid);
+      }
     }
-  }, [totalPages, currentPage]);
+
+    // Remaining users are those not in recommended
+    const remaining = baseUsers.filter(u => !seen.has(u._id));
+
+    return {
+      recommendedUsers: [...sameCollege, ...sameSkillsAtLeastTwo],
+      remainingUsers: remaining,
+    };
+  }, [baseUsers, profileData]);
+
+  // Removed legacy pagination bounds effect
 
   useEffect(() => {
     setCurrentPage(1);
@@ -614,46 +637,95 @@ const Network = () => {
                 {loadingUsers && <div className="text-white/60 text-center py-8">Loading users...</div>}
                 {userError && <div className="text-red-400 text-center py-8">{userError}</div>}
                 {viewMode === 'grid' ? (
-                  (paginatedUsers.length === 0 ? (
+                  (baseUsers.length === 0 ? (
                     <div className="text-center text-white/70 py-12 text-lg">
                       Only users who have filled their First Name, Skills, and College will be visible here.<br />
                       Please complete your profile to appear in the network.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-16">
-                      {paginatedUsers.map((user: NetworkUser, index) => (
-                        <motion.div
-                          key={user._id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.6, delay: index * 0.1 }}
-                        >
-                          <UserProfileCard
-                            user={{
-                              id: user._id,
-                              name: `${user.firstName} ${user.lastName || ''}`.trim(),
-                              profilePicture: user.profilePicture || '',
-                              college: user.college,
-                              year: user.year,
-                              branch: user.branch,
-                              skills: user.skills,
-                              bio: user.bio,
-                              isOnline: user.isOnline,
-                              gender: user.gender,
-                              firstName: user.firstName,
-                              lastName: user.lastName,
-                            }}
-                            getConnectionStatus={getConnectionStatus}
-                            onConnect={handleConnect}
-                            unreadCount={peerUnreadMap[user._id] || 0}
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
+                    <>
+                      {/* Recommended Section */}
+                      <div className="mb-6 sm:mb-8">
+                        <div className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Recommended Profiles</div>
+                        {recommendedUsers.length === 0 ? (
+                          <div className="text-white/50 text-sm">No recommendations based on your college or skills.</div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                            {recommendedUsers.map((user: NetworkUser, index) => (
+                              <motion.div
+                                key={user._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: index * 0.05 }}
+                              >
+                                <UserProfileCard
+                                  user={{
+                                    id: user._id,
+                                    name: `${user.firstName} ${user.lastName || ''}`.trim(),
+                                    profilePicture: user.profilePicture || '',
+                                    college: user.college,
+                                    year: user.year,
+                                    branch: user.branch,
+                                    skills: user.skills,
+                                    bio: user.bio,
+                                    isOnline: user.isOnline,
+                                    gender: user.gender,
+                                    firstName: user.firstName,
+                                    lastName: user.lastName,
+                                  }}
+                                  getConnectionStatus={getConnectionStatus}
+                                  onConnect={handleConnect}
+                                  unreadCount={peerUnreadMap[user._id] || 0}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Remaining Section */}
+                      <div className="mt-6 sm:mt-8">
+                        <div className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">All Remaining Profiles</div>
+                        {remainingUsers.length === 0 ? (
+                          <div className="text-white/50 text-sm">No more profiles to show.</div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-16">
+                            {remainingUsers.map((user: NetworkUser, index) => (
+                              <motion.div
+                                key={user._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: index * 0.05 }}
+                              >
+                                <UserProfileCard
+                                  user={{
+                                    id: user._id,
+                                    name: `${user.firstName} ${user.lastName || ''}`.trim(),
+                                    profilePicture: user.profilePicture || '',
+                                    college: user.college,
+                                    year: user.year,
+                                    branch: user.branch,
+                                    skills: user.skills,
+                                    bio: user.bio,
+                                    isOnline: user.isOnline,
+                                    gender: user.gender,
+                                    firstName: user.firstName,
+                                    lastName: user.lastName,
+                                  }}
+                                  getConnectionStatus={getConnectionStatus}
+                                  onConnect={handleConnect}
+                                  unreadCount={peerUnreadMap[user._id] || 0}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
                   ))
                 ) : (
                   <div className="flex flex-col gap-3 sm:gap-4 mb-8 sm:mb-16">
-                    {paginatedUsers.map((user: NetworkUser, index) => (
+                    {[...recommendedUsers, ...remainingUsers].map((user: NetworkUser, index) => (
                       <motion.div
                         key={user._id}
                         initial={{ opacity: 0, y: 20 }}
@@ -680,34 +752,7 @@ const Network = () => {
                     ))}
                   </div>
                 )}
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-1 sm:gap-2 mt-4 mb-8">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="px-2 sm:px-3 py-1 rounded bg-brand-purple/20 text-brand-purple disabled:opacity-50 text-sm"
-                    >
-                      Previous
-                    </button>
-                    {[...Array(totalPages)].map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`px-2 sm:px-3 py-1 rounded text-sm ${currentPage === i + 1 ? 'bg-brand-purple text-white' : 'bg-white/10 text-brand-purple'}`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-2 sm:px-3 py-1 rounded bg-brand-purple/20 text-brand-purple disabled:opacity-50 text-sm"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
+                {/* Pagination removed in favor of two sections (Recommended, Remaining) */}
               </section>
             </div>
           </div>

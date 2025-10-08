@@ -22,10 +22,38 @@ const FALLBACK_BASE_URLS = [
   'http://localhost:5001',
 ];
 const getChatApiBaseUrl = () => {
+  // If running the app locally, hard-target the Node chat server on 127.0.0.1:3000
+  try {
+    const isLocal = typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+    if (isLocal) return 'http://127.0.0.1:3000';
+  } catch {}
   if (import.meta.env.VITE_CHAT_API_BASE_URL) return import.meta.env.VITE_CHAT_API_BASE_URL as string;
   // heuristic: if pointing to Flask in dev, fall back to Node on 3000
-  if (API_BASE_URL.includes('localhost:5001')) return 'http://localhost:3000';
+  if (API_BASE_URL.includes('localhost:5001')) return 'http://127.0.0.1:3000';
   return API_BASE_URL;
+};
+
+const postFormWithAuth = async (endpoint: string, form: FormData): Promise<Response> => {
+  const token = await getIdToken();
+  const bases = [getChatApiBaseUrl(), ...FALLBACK_BASE_URLS.filter(b => b !== getChatApiBaseUrl())];
+  let lastErr: any = null;
+  for (const base of bases) {
+    try {
+      const resp = await fetch(`${base}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: form,
+      });
+      if (resp.ok || resp.status !== 0) return resp;
+      lastErr = await resp.text();
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  const message = typeof lastErr === 'string' ? lastErr : (lastErr?.message || 'upload failed');
+  return new Response(JSON.stringify({ error: message }), { status: 503, headers: { 'Content-Type': 'application/json' } });
 };
 
 const getIdToken = async (): Promise<string | null> => {
@@ -250,20 +278,27 @@ export class ApiService {
   }
 
   static async sendImageMessage(from: string, to: string, file: File) {
-    const token = await getIdToken();
     const form = new FormData();
     form.append('from', from);
     form.append('to', to);
     form.append('image', file);
-    const response = await fetch(`${getChatApiBaseUrl()}/api/messages/send-image`, {
-      method: 'POST',
-      headers: {
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-      body: form,
-    });
+    const response = await postFormWithAuth('/api/messages/send-image', form);
     if (!response.ok) {
-      throw new Error(`Failed to send image: ${response.statusText}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`Failed to send image: ${response.status} ${response.statusText} ${body}`);
+    }
+    return response.json();
+  }
+
+  static async sendFileMessage(from: string, to: string, file: File) {
+    const form = new FormData();
+    form.append('from', from);
+    form.append('to', to);
+    form.append('file', file);
+    const response = await postFormWithAuth('/api/messages/send-file', form);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Failed to send file: ${response.status} ${response.statusText} ${body}`);
     }
     return response.json();
   }

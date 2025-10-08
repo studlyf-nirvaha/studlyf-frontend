@@ -73,11 +73,15 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
     if (!user || !currentUser) return;
     if (attachment) {
       try {
-        const msg = await ApiService.sendImageMessage(currentUser.uid, String(user._id || user.id), attachment);
+        const isImage = attachment.type.startsWith('image/');
+        const msg = isImage
+          ? await ApiService.sendImageMessage(currentUser.uid, String(user._id || user.id), attachment)
+          : await ApiService.sendFileMessage(currentUser.uid, String(user._id || user.id), attachment);
         setMessages(prev => [...prev, msg]);
         setAttachment(null);
       } catch (err: any) {
-        setError('Unable to send image at this time.');
+        const msg = err?.message || 'Unable to send attachment at this time.';
+        setError(msg);
       }
       return;
     }
@@ -163,6 +167,10 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
               >
                 {message.type === 'image' && message.mediaUrl ? (
                   <img src={message.mediaUrl} alt="attachment" className="max-w-full rounded-md border border-purple-900" />
+                ) : message.type === 'file' && message.mediaUrl ? (
+                  <a href={message.mediaUrl} target="_blank" rel="noreferrer" className="underline text-white">
+                    {message.fileName || 'Download file'}
+                  </a>
                 ) : (
                   <span>{message.text || message.content}</span>
                 )}
@@ -175,8 +183,8 @@ const ChatModal = ({ isOpen, onClose, user }: ChatModalProps) => {
         </div>
         {/* Input */}
         <div className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-black border-t border-purple-900 rounded-b-xl sm:rounded-b-2xl">
-          <label className="cursor-pointer text-white/80 hover:text-white hover:bg-purple-900/30 rounded-full p-1" title="Attach image">
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => setAttachment(e.target.files?.[0] || null)} />
+          <label className="cursor-pointer text-white/80 hover:text-white hover:bg-purple-900/30 rounded-full p-1" title="Attach image or file">
+            <input type="file" className="hidden" onChange={(e) => setAttachment(e.target.files?.[0] || null)} />
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
               <path d="M9 12.75a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1-.75-.75Z" />
               <path fillRule="evenodd" d="M3.374 7.126a4.5 4.5 0 0 1 6.364 0l7.136 7.137a3 3 0 1 1-4.243 4.243l-5.303-5.303a1.5 1.5 0 0 1 2.121-2.121l4.243 4.243a.75.75 0 1 0 1.06-1.06l-4.242-4.244a3 3 0 1 0-4.243 4.243l5.303 5.303a4.5 4.5 0 1 0 6.364-6.364L9.738 5.005a6 6 0 1 0-8.485 8.485l5.304 5.303a.75.75 0 1 0 1.06-1.06L2.313 12.43a4.5 4.5 0 0 1 0-6.364Z" clipRule="evenodd" />
