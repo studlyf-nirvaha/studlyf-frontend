@@ -153,6 +153,17 @@ const Navbar = () => {
                               <Link to="/startups" className={cn("text-white/70 hover:text-white focus:text-white cursor-pointer px-3 py-2 rounded-xl", location.pathname === "/startups" && "text-brand-purple")}>Startups</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
+  <Link
+    to="/ai-tools"
+    className={cn("text-white/70 hover:text-white focus:text-white cursor-pointer px-3 py-2 rounded-xl", location.pathname === "/ai-tools" && "text-brand-purple")}
+  >
+    AI Tools
+  </Link>
+</DropdownMenuItem>
+<DropdownMenuItem asChild>
+                              <Link to="/company-jobs" className={cn("text-white/70 hover:text-white focus:text-white cursor-pointer px-3 py-2 rounded-xl", location.pathname === "/company-jobs" && "text-brand-purple")}>Company Jobs</Link>
+                            </DropdownMenuItem> 
+                            <DropdownMenuItem asChild>
                               <Link to="/studverse" className={cn("text-white/70 hover:text-white focus:text-white cursor-pointer px-3 py-2 rounded-xl", location.pathname === "/studverse" && "text-brand-purple")}>Studverse</Link>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -309,6 +320,20 @@ const Navbar = () => {
                       >
                         Startups
                       </Link>
+                      <Link
+  to="/ai-tools"
+  className={cn(
+    "block px-4 py-2 rounded-lg font-medium transition-all duration-300 text-base touch-target",
+    location.pathname === "/ai-tools"
+      ? "text-white font-bold bg-white/10"
+      : "text-white/70 hover:text-white hover:bg-white/10"
+  )}
+  style={{ minHeight: 40 }}
+  onClick={() => setIsMobileMenuOpen(false)}
+>
+  AI Tools
+</Link>
+
                       <Link
                         to="/studverse"
                         className={cn(
