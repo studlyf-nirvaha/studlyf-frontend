@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
@@ -14,14 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
   SelectContent,
-  SelectItem
+  SelectItem,
 } from "@/components/ui/select";
 
-// Backend API (must match your Flask port!)
 const API_URL = "http://127.0.0.1:5001/events";
 
-const Events = () => {
+const Events: React.FC = () => {
   const [showHostForm, setShowHostForm] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [fetchedEvents, setFetchedEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -36,11 +38,10 @@ const Events = () => {
     registration_end_date: "",
   });
 
-  // Fetch events from backend
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await fetch(API_URL);
+        const res = await fetch(API_URL, { credentials: "include" });
         const data = await res.json();
         setFetchedEvents(data.events || []);
       } catch (error) {
@@ -52,24 +53,64 @@ const Events = () => {
     fetchEvents();
   }, []);
 
-  // Handle input change
+  // Check admin session status on mount/refresh
+  useEffect(() => {
+    fetch("http://127.0.0.1:5001/api/me", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(data.role === "admin"))
+      .catch(() => setIsAdmin(false));
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData({ ...formData, [name]: type === "number" ? Number(value) : value });
   };
 
-  // Handle select input
   const handleTypeChange = (val: string) => {
     setFormData({ ...formData, type: val });
   };
 
-  // Submit handler
+  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoginData({ ...loginData, [e.target.name]: e.target.value });
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("http://127.0.0.1:5001/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(loginData),
+      });
+      const data = await res.json();
+      if (res.ok && data.role === "admin") {
+        setIsAdmin(true);
+        setShowLoginForm(false);
+        alert("Logged in as admin!");
+      } else {
+        alert("Login failed or you are not an admin.");
+      }
+    } catch (error) {
+      alert("Error during login.");
+      console.error(error);
+    }
+  };
+
+  // Admin Logout handler
+  const handleLogout = async () => {
+    await fetch("http://127.0.0.1:5001/logout", { method: "POST", credentials: "include" });
+    setIsAdmin(false);
+    alert("Logged out successfully");
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(formData),
       });
       if (res.ok) {
@@ -88,11 +129,30 @@ const Events = () => {
           registration_end_date: "",
         });
       } else {
-        alert("Failed to add event. Please check your input.");
+        alert("Failed to add event. Only admins can add events.");
       }
     } catch (error) {
       alert("Error adding event. Please try again.");
       console.error("Error adding event:", error);
+    }
+  };
+
+  // Remove event (admin only)
+  const handleRemoveEvent = async (eventId: number) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+    try {
+      const res = await fetch(`http://127.0.0.1:5001/events/${eventId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setFetchedEvents(prev => prev.filter(e => e.id !== eventId));
+        alert("Event removed!");
+      } else {
+        alert("Failed to remove event.");
+      }
+    } catch (error) {
+      alert("Error removing event.");
     }
   };
 
@@ -118,16 +178,75 @@ const Events = () => {
           <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink">
             Next-Gen Events
           </h1>
-          <Button
-            onClick={() => setShowHostForm(true)}
-            className="bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-opacity gap-2"
-          >
-            <Plus size={18} />
-            Host Event
-          </Button>
+          {/* ADMIN LOGIN BUTTON */}
+          {!isAdmin && (
+            <Button
+              onClick={() => setShowLoginForm(true)}
+              className="bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-opacity gap-2"
+            >
+              Admin Login
+            </Button>
+          )}
 
-          {/* Host Event Modal */}
-          {showHostForm && (
+          {/* ADMIN HOST & LOGOUT BUTTONS */}
+          {isAdmin && (
+            <div className="flex gap-4 mb-4">
+              <Button
+                onClick={() => setShowHostForm(true)}
+                className="bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-opacity gap-2"
+              >
+                <Plus size={18} />
+                Host Event
+              </Button>
+              <Button
+                onClick={handleLogout}
+                className="bg-red-700 hover:bg-red-800 transition"
+              >
+                Logout
+              </Button>
+            </div>
+          )}
+
+          {/* ADMIN LOGIN MODAL */}
+          {showLoginForm && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div className="bg-black rounded-xl p-6 w-full max-w-sm relative border border-white/10 text-white">
+                <button
+                  onClick={() => setShowLoginForm(false)}
+                  className="absolute top-3 right-3"
+                >
+                  <X />
+                </button>
+                <h2 className="text-xl font-bold mb-4">Admin Login</h2>
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <Input
+                    name="username"
+                    placeholder="Username"
+                    value={loginData.username}
+                    onChange={handleLoginChange}
+                    required
+                  />
+                  <Input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    value={loginData.password}
+                    onChange={handleLoginChange}
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-brand-purple to-brand-pink text-white"
+                  >
+                    Login
+                  </Button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* HOST EVENT MODAL - Only admins */}
+          {showHostForm && isAdmin && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
               <div className="bg-black rounded-xl p-6 w-full max-w-lg relative border border-white/10 text-white">
                 <button
@@ -214,7 +333,8 @@ const Events = () => {
               </div>
             </div>
           )}
-          {/* Events List */}
+
+          {/* Events List Display */}
           <Tabs defaultValue="list" className="mt-8">
             <TabsList>
               <TabsTrigger value="list">List View</TabsTrigger>
@@ -227,7 +347,7 @@ const Events = () => {
                 fetchedEvents.map(event => (
                   <div
                     key={event.id}
-                    className="p-4 mb-4 border rounded-lg bg-white/10 text-white"
+                    className="p-4 mb-4 border rounded-lg bg-white/10 text-white relative"
                   >
                     <h3 className="text-lg font-bold">{event.title}</h3>
                     <p>{event.description}</p>
@@ -245,6 +365,15 @@ const Events = () => {
                     >
                       Register
                     </a>
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        className="absolute top-2 right-2 bg-red-600"
+                        onClick={() => handleRemoveEvent(event.id)}
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 ))
               )}

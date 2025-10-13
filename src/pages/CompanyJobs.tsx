@@ -102,7 +102,7 @@ const CompanyJobsPage = () => {
       <Navbar />
       <main className="flex-1 flex flex-col items-center px-4 pt-20 pb-24 relative">
         <h1 className="text-5xl sm:text-6xl font-extrabold text-center mb-10 bg-gradient-to-r from-brand-purple to-brand-pink bg-clip-text text-transparent drop-shadow-lg uppercase">
-          Top Product-Based Internships & Jobs 🚀
+          Top Product-Based Internships & Jobs 
         </h1>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
           {COMPANIES.map((company) => (
