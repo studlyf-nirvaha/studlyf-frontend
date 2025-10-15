@@ -7,6 +7,20 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile, updateUserProfile, ApiService } from '@/lib/api';
 import Lenis from 'lenis';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import Events from './Events';
+import FreeCourses from './FreeCourses';
+import Studverse from './Studverse';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+
+// List of admin emails
+const ADMIN_EMAILS = [
+  "sreejajnvkoppula@gmail.com",
+  "admin2@example.com",
+  "admin3@example.com"
+];
 
 interface EditProfileData {
   displayName: string;
@@ -105,6 +119,11 @@ export default function StudentProfileDashboard() {
       ],
     },
   ];
+
+  // For admin tabs
+  const [selectedTab, setSelectedTab] = useState('events');
+  const userEmail = profile?.email || user?.email;
+  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false;
 
   // Fetch profile from backend
   useEffect(() => {
@@ -297,9 +316,44 @@ export default function StudentProfileDashboard() {
     setStep(s => Math.max(0, s - 1));
   };
 
+  // --- ADMIN DASHBOARD ---
   if (loading) return <div className="text-white p-8">Loading profile...</div>;
   if (!user) return <div className="text-white p-8">Please log in.</div>;
 
+  if (isAdmin) {
+    return (
+      <>
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-16">
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-white font-semibold">Logged in as: {userEmail}</div>
+            <Button onClick={handleLogout} variant="destructive">
+              Logout
+            </Button>
+          </div>
+          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+            <TabsList>
+              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="freeCourses">Free Courses</TabsTrigger>
+              <TabsTrigger value="studverse">Studverse</TabsTrigger>
+            </TabsList>
+            <TabsContent value="events">
+              <Events userEmail={userEmail} />
+            </TabsContent>
+            <TabsContent value="freeCourses">
+              <FreeCourses userEmail={userEmail} />
+            </TabsContent>
+            <TabsContent value="studverse">
+              <Studverse userEmail={userEmail} />
+            </TabsContent>
+          </Tabs>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  // --- STUDENT/NON-ADMIN DASHBOARD ---
   return (
     <div className="relative min-h-screen w-full font-sans overflow-x-hidden bg-black">
       {/* Animated Gradient Background */}
@@ -481,7 +535,7 @@ export default function StudentProfileDashboard() {
               ) : <span className="text-white/60 text-sm">No projects added.</span>}
             </div>
             {/* Certifications */}
-            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#a259ff99,0_0_32px_4px_#ff7eb399]">
+            <div className="rounded-2xl bg-[#18181b] shadow-md p-3 border border-white hover:border-[#ff7eb3] transition-all duration-300 outline outline-2 outline-white hover:outline-[#ff7eb3] hover:shadow-[0_0_16px_2px_#ff7eb399,0_0_32px_4px_#ff7eb399]">
               <h3 className="text-lg sm:text-xl font-extrabold text-white drop-shadow-[0_0_8px_#fff,0_0_16px_#a259ff] mb-2 flex items-center gap-2">Certifications</h3>
               {Array.isArray(profile?.certificationFiles) && profile.certificationFiles.length > 0 ? (
                 <ul className="space-y-1">

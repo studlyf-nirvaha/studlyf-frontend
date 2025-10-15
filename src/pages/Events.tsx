@@ -19,11 +19,16 @@ import {
 
 const API_URL = "http://127.0.0.1:5001/events";
 
-const Events: React.FC = () => {
+interface EventsProps {
+  userEmail?: string;
+}
+
+const TARGET_IMAGE_WIDTH = 600;    // px, for balanced left-side image sizing
+const TARGET_IMAGE_HEIGHT = 320;   // px, for event card aesthetic
+const TARGET_IMAGE_QUALITY = 0.8;  // JPEG quality (0–1)
+
+const Events: React.FC<EventsProps> = ({ userEmail }) => {
   const [showHostForm, setShowHostForm] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [fetchedEvents, setFetchedEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -37,85 +42,102 @@ const Events: React.FC = () => {
     registration_link: "",
     registration_end_date: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // const ADMIN_EMAILS = [
+  //   "sreejajnvkoppula@gmail.com",
+  //   "admin2@example.com",
+  //   "admin3@example.com",
+  // ];
+  const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(",").map(email => email.trim()) || [];
+const isAdmin = userEmail ? adminEmails.includes(userEmail) : false;
+
+  // const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false;
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const res = await fetch(API_URL, { credentials: "include" });
-        const data = await res.json();
-        setFetchedEvents(data.events || []);
-      } catch (error) {
-        console.error("Error fetching events:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEvents();
   }, []);
 
-  // Check admin session status on mount/refresh
-  useEffect(() => {
-    fetch("http://127.0.0.1:5001/api/me", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setIsAdmin(data.role === "admin"))
-      .catch(() => setIsAdmin(false));
-  }, []);
+  const fetchEvents = async () => {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      setFetchedEvents(data.events || []);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    setFormData({ ...formData, [name]: type === "number" ? Number(value) : value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleTypeChange = (val: string) => {
     setFormData({ ...formData, type: val });
   };
 
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoginData({ ...loginData, [e.target.name]: e.target.value });
-  };
+  // IMAGE RESIZE/COMPRESS HANDLER
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("http://127.0.0.1:5001/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(loginData),
-      });
-      const data = await res.json();
-      if (res.ok && data.role === "admin") {
-        setIsAdmin(true);
-        setShowLoginForm(false);
-        alert("Logged in as admin!");
-      } else {
-        alert("Login failed or you are not an admin.");
-      }
-    } catch (error) {
-      alert("Error during login.");
-      console.error(error);
+    // Only process images
+    if (!file.type.startsWith("image/")) {
+      setImageFile(null);
+      return;
     }
-  };
 
-  // Admin Logout handler
-  const handleLogout = async () => {
-    await fetch("http://127.0.0.1:5001/logout", { method: "POST", credentials: "include" });
-    setIsAdmin(false);
-    alert("Logged out successfully");
+    // Resize/compress using canvas
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = TARGET_IMAGE_WIDTH;
+        canvas.height = TARGET_IMAGE_HEIGHT;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, TARGET_IMAGE_WIDTH, TARGET_IMAGE_HEIGHT);
+
+        // Compress image to JPEG
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              // Create new File object with compressed image
+              const compressedFile = new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              setImageFile(compressedFile);
+            }
+          },
+          "image/jpeg",
+          TARGET_IMAGE_QUALITY
+        );
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const fd = new FormData();
+    Object.entries(formData).forEach(([k, v]) => fd.append(k, String(v)));
+    if (imageFile) fd.append("image", imageFile);
+
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        body: fd,
         credentials: "include",
-        body: JSON.stringify(formData),
       });
+      const data = await res.json();
       if (res.ok) {
-        const newEvent = await res.json();
-        setFetchedEvents(prev => [newEvent, ...prev]);
+        setFetchedEvents([data, ...fetchedEvents]);
         setShowHostForm(false);
         setFormData({
           title: "",
@@ -128,32 +150,19 @@ const Events: React.FC = () => {
           registration_link: "",
           registration_end_date: "",
         });
+        setImageFile(null);
       } else {
-        alert("Failed to add event. Only admins can add events.");
+        alert(data.error || "Failed to add event");
       }
-    } catch (error) {
-      alert("Error adding event. Please try again.");
-      console.error("Error adding event:", error);
+    } catch (err) {
+      alert("Error adding event");
     }
   };
 
-  // Remove event (admin only)
-  const handleRemoveEvent = async (eventId: number) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) return;
-    try {
-      const res = await fetch(`http://127.0.0.1:5001/events/${eventId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (res.ok) {
-        setFetchedEvents(prev => prev.filter(e => e.id !== eventId));
-        alert("Event removed!");
-      } else {
-        alert("Failed to remove event.");
-      }
-    } catch (error) {
-      alert("Error removing event.");
-    }
+  const handleRemove = async (id: number) => {
+    if (!window.confirm("Delete this event?")) return;
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    setFetchedEvents(prev => prev.filter(e => e.id !== id));
   };
 
   return (
@@ -175,80 +184,23 @@ const Events: React.FC = () => {
         className="container mx-auto px-4 pt-24 pb-16 relative"
       >
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-brand-purple to-brand-pink">
+          <h2 className="text-xl text-center text-white mb-2">
+            Logged in as: <b>{userEmail || "Guest"}</b>
+          </h2>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-pink">
             Next-Gen Events
           </h1>
-          {/* ADMIN LOGIN BUTTON */}
-          {!isAdmin && (
+          {isAdmin && (
             <Button
-              onClick={() => setShowLoginForm(true)}
-              className="bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-opacity gap-2"
+              onClick={() => setShowHostForm(true)}
+              className="bg-gradient-to-r from-brand-purple to-brand-pink mb-4"
             >
-              Admin Login
+              <Plus className="mr-2 h-4 w-4" /> Host Event
             </Button>
           )}
-
-          {/* ADMIN HOST & LOGOUT BUTTONS */}
-          {isAdmin && (
-            <div className="flex gap-4 mb-4">
-              <Button
-                onClick={() => setShowHostForm(true)}
-                className="bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-opacity gap-2"
-              >
-                <Plus size={18} />
-                Host Event
-              </Button>
-              <Button
-                onClick={handleLogout}
-                className="bg-red-700 hover:bg-red-800 transition"
-              >
-                Logout
-              </Button>
-            </div>
-          )}
-
-          {/* ADMIN LOGIN MODAL */}
-          {showLoginForm && (
+          {showHostForm && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-              <div className="bg-black rounded-xl p-6 w-full max-w-sm relative border border-white/10 text-white">
-                <button
-                  onClick={() => setShowLoginForm(false)}
-                  className="absolute top-3 right-3"
-                >
-                  <X />
-                </button>
-                <h2 className="text-xl font-bold mb-4">Admin Login</h2>
-                <form onSubmit={handleLoginSubmit} className="space-y-4">
-                  <Input
-                    name="username"
-                    placeholder="Username"
-                    value={loginData.username}
-                    onChange={handleLoginChange}
-                    required
-                  />
-                  <Input
-                    type="password"
-                    name="password"
-                    placeholder="Password"
-                    value={loginData.password}
-                    onChange={handleLoginChange}
-                    required
-                  />
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-brand-purple to-brand-pink text-white"
-                  >
-                    Login
-                  </Button>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* HOST EVENT MODAL - Only admins */}
-          {showHostForm && isAdmin && (
-            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-              <div className="bg-black rounded-xl p-6 w-full max-w-lg relative border border-white/10 text-white">
+              <div className="bg-black border border-white/10 rounded-xl p-6 w-full max-w-lg text-white relative">
                 <button
                   onClick={() => setShowHostForm(false)}
                   className="absolute top-3 right-3"
@@ -257,120 +209,67 @@ const Events: React.FC = () => {
                 </button>
                 <h2 className="text-xl font-bold mb-4">Host Your Event</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <Input
-                    name="title"
-                    placeholder="Event Title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                  />
-                  <Input
-                    type="date"
-                    name="event_date"
-                    value={formData.event_date}
-                    onChange={handleChange}
-                    required
-                  />
-                  <Input
-                    type="date"
-                    name="registration_end_date"
-                    value={formData.registration_end_date}
-                    onChange={handleChange}
-                    required
-                  />
-                  <Input
-                    type="time"
-                    name="time"
-                    value={formData.time}
-                    onChange={handleChange}
-                  />
-                  <Input
-                    name="location"
-                    placeholder="Location"
-                    value={formData.location}
-                    onChange={handleChange}
-                  />
-                  <Select
-                    value={formData.type}
-                    onValueChange={handleTypeChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Type" />
-                    </SelectTrigger>
+                  <Input name="title" placeholder="Event title" value={formData.title} onChange={handleChange} required />
+                  <Input type="date" name="event_date" value={formData.event_date} onChange={handleChange} required />
+                  <Input type="date" name="registration_end_date" value={formData.registration_end_date} onChange={handleChange} required />
+                  <Input type="time" name="time" value={formData.time} onChange={handleChange} />
+                  <Input name="location" placeholder="Location" value={formData.location} onChange={handleChange} />
+                  <Select value={formData.type} onValueChange={handleTypeChange}>
+                    <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Hackathon">Hackathon</SelectItem>
                       <SelectItem value="Workshop">Workshop</SelectItem>
                       <SelectItem value="Ideathon">Ideathon</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Textarea
-                    name="description"
-                    placeholder="Description"
-                    value={formData.description}
-                    onChange={handleChange}
-                  />
-                  <Input
-                    name="registration_link"
-                    placeholder="Registration Link"
-                    value={formData.registration_link}
-                    onChange={handleChange}
-                  />
-                  <Input
-                    type="number"
-                    name="attendees"
-                    placeholder="Attendees"
-                    value={formData.attendees}
-                    onChange={handleChange}
-                    min={0}
-                  />
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-brand-purple to-brand-pink text-white"
-                  >
+                  <Textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} />
+                  <Input name="registration_link" placeholder="Registration link" value={formData.registration_link} onChange={handleChange} />
+                  <Input type="number" name="attendees" placeholder="Attendees" value={formData.attendees} onChange={handleChange} />
+                  <Input type="file" accept="image/*" onChange={handleImageChange} />
+                  <Button type="submit" className="w-full bg-gradient-to-r from-brand-purple to-brand-pink">
                     Submit Event
                   </Button>
                 </form>
               </div>
             </div>
           )}
-
-          {/* Events List Display */}
           <Tabs defaultValue="list" className="mt-8">
             <TabsList>
-              <TabsTrigger value="list">List View</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
             </TabsList>
             <TabsContent value="list" className="mt-6">
               {loading ? (
-                <p>Loading events...</p>
+                <p>Loading...</p>
+              ) : fetchedEvents.length === 0 ? (
+                <p>No events found.</p>
               ) : (
-                fetchedEvents.map(event => (
-                  <div
-                    key={event.id}
-                    className="p-4 mb-4 border rounded-lg bg-white/10 text-white relative"
-                  >
-                    <h3 className="text-lg font-bold">{event.title}</h3>
-                    <p>{event.description}</p>
-                    <p>
-                      📍 {event.location} | 🗓 {event.event_date} | ⏰ {event.time}
-                    </p>
-                    <p>
-                      🏷 {event.type} | Registration ends: {event.registration_end_date}
-                    </p>
-                    <a
-                      href={event.registration_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-400 underline"
-                    >
-                      Register
-                    </a>
-                    {isAdmin && (
-                      <Button
-                        size="sm"
-                        className="absolute top-2 right-2 bg-red-600"
-                        onClick={() => handleRemoveEvent(event.id)}
+                fetchedEvents.map((e) => (
+                  <div key={e.id} className="flex p-4 mb-4 bg-white/10 rounded-lg relative text-white items-center space-x-6">
+                    {e.image_url && (
+                      <img
+                        src={`http://127.0.0.1:5001${e.image_url}`}
+                        alt="Event"
+                        className="w-60 h-40 object-cover rounded-lg flex-shrink-0"
+                        style={{ background: "#181818" }}
+                      />
+                    )}
+                    <div className="flex-grow">
+                      <h3 className="text-lg font-bold">{e.title}</h3>
+                      <p>{e.description}</p>
+                      <p>📍 {e.location} | 🗓 {e.event_date} | ⏰ {e.time}</p>
+                      <p>🏷 {e.type} | Registration ends: {e.registration_end_date}</p>
+                      <a
+                        href={e.registration_link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-400 underline"
                       >
+                        Register
+                      </a>
+                    </div>
+                    {isAdmin && (
+                      <Button size="sm" className="absolute top-2 right-2 bg-red-600" onClick={() => handleRemove(e.id)}>
                         Remove
                       </Button>
                     )}
@@ -378,9 +277,7 @@ const Events: React.FC = () => {
                 ))
               )}
             </TabsContent>
-            <TabsContent value="calendar" className="mt-6">
-              <p>Calendar view coming soon!</p>
-            </TabsContent>
+            <TabsContent value="calendar"><p>Calendar view coming soon!</p></TabsContent>
           </Tabs>
         </div>
       </motion.div>

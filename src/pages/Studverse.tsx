@@ -1,110 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import React, { useState, useEffect } from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
-function getYouTubeId(url) {
-  const match = url.match(/(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+function getYouTubeId(url: string) {
+  const match = url.match(
+    /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
   return match ? match[1] : null;
 }
-function getYouTubeThumbnail(id) {
+
+function getYouTubeThumbnail(id: string) {
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 
-const Studverse = () => {
-  const [categories, setCategories] = useState([]);
+interface StudverseProps {
+  userEmail?: string;
+}
+
+// Load admin emails from environment variable
+const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(",").map(email => email.trim()) || [];
+const isAdminFlag = (userEmail?: string) => userEmail ? adminEmails.includes(userEmail) : false;
+
+const Studverse: React.FC<StudverseProps> = ({ userEmail }) => {
+  const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState(0);
-  const [videoLists, setVideoLists] = useState([]);
+  const [videoLists, setVideoLists] = useState<string[][]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [newCategory, setNewCategory] = useState("");
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
 
+  // Set admin state based on userEmail and environment variable
   useEffect(() => {
-    fetch("http://127.0.0.1:5001/api/me", { credentials: "include" })
-      .then(res => res.json())
-      .then(data => setIsAdmin(data.role === "admin"))
-      .catch(() => setIsAdmin(false));
-  }, []);
+    setIsAdmin(isAdminFlag(userEmail));
+  }, [userEmail]);
 
+  // Fetch categories initially
   useEffect(() => {
     fetch("http://127.0.0.1:5001/studverse/categories")
-      .then(res => res.json())
-      .then(data => setCategories(data.categories || []));
+      .then((res) => res.json())
+      .then((data) => setCategories(data.categories || []));
   }, []);
 
+  // Fetch videos for selected category
   useEffect(() => {
     if (categories[selected]) {
       fetch(`http://127.0.0.1:5001/studverse/videos/${encodeURIComponent(categories[selected])}`)
-        .then(res => res.json())
-        .then(data => {
-          videoLists[selected] = data.videos || [];
-          setVideoLists([...videoLists]);
+        .then((res) => res.json())
+        .then((data) => {
+          const newVideoLists = [...videoLists];
+          newVideoLists[selected] = data.videos || [];
+          setVideoLists(newVideoLists);
         });
     }
   }, [selected, categories]);
 
-  const handleLoginChange = (e) => setLoginData({ ...loginData, [e.target.name]: e.target.value });
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    const res = await fetch("http://127.0.0.1:5001/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(loginData)
-    });
-    const data = await res.json();
-    if (res.ok && data.role === "admin") {
-      setIsAdmin(true);
-      setShowLoginForm(false);
-      alert("Logged in as admin!");
-    } else {
-      alert("Login failed or you are not an admin.");
-    }
-  };
-
-  const handleLogout = async () => {
-    await fetch("http://127.0.0.1:5001/logout", { method: "POST", credentials: "include" });
-    setIsAdmin(false);
-    alert("Logged out successfully");
-  };
-
-  const handleAddCategory = async (e) => {
+  // Handlers for categories and videos
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategory) return;
     const res = await fetch("http://127.0.0.1:5001/studverse/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: newCategory })
+      body: JSON.stringify({ name: newCategory }),
     });
     if (res.ok) {
       setNewCategory("");
       fetch("http://127.0.0.1:5001/studverse/categories")
-        .then(res => res.json())
-        .then(data => setCategories(data.categories || []));
-    } else {
-      alert("Failed to add category or already exists.");
-    }
+        .then((res) => res.json())
+        .then((data) => setCategories(data.categories || []));
+    } else alert("Failed to add category or already exists.");
   };
 
-  const handleRemoveCategory = async (name) => {
+  const handleRemoveCategory = async (name: string) => {
     if (!window.confirm(`Delete category "${name}" and all its videos?`)) return;
     const res = await fetch(`http://127.0.0.1:5001/studverse/categories/${encodeURIComponent(name)}`, {
       method: "DELETE",
-      credentials: "include"
+      credentials: "include",
     });
     if (res.ok) {
       fetch("http://127.0.0.1:5001/studverse/categories")
-        .then(res => res.json())
-        .then(data => setCategories(data.categories || []));
+        .then((res) => res.json())
+        .then((data) => setCategories(data.categories || []));
       setSelected(0);
-    } else {
-      alert("Failed to remove category.");
-    }
+    } else alert("Failed to remove category.");
   };
 
-  const handleAddVideo = async (e) => {
+  const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     const cat = categories[selected];
     if (!newUrl || !cat) return;
@@ -112,39 +94,37 @@ const Studverse = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ url: newUrl })
+      body: JSON.stringify({ url: newUrl }),
     });
     if (res.ok) {
       setNewUrl("");
       fetch(`http://127.0.0.1:5001/studverse/videos/${encodeURIComponent(cat)}`)
-        .then(res => res.json())
-        .then(data => {
-          videoLists[selected] = data.videos || [];
-          setVideoLists([...videoLists]);
+        .then((res) => res.json())
+        .then((data) => {
+          const updatedVideoLists = [...videoLists];
+          updatedVideoLists[selected] = data.videos || [];
+          setVideoLists(updatedVideoLists);
         });
-    } else {
-      alert("Failed to add video.");
-    }
+    } else alert("Failed to add video.");
   };
 
-  const handleRemoveVideo = async (url) => {
+  const handleRemoveVideo = async (url: string) => {
     const cat = categories[selected];
     const res = await fetch(`http://127.0.0.1:5001/studverse/videos/${encodeURIComponent(cat)}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ url })
+      body: JSON.stringify({ url }),
     });
     if (res.ok) {
       fetch(`http://127.0.0.1:5001/studverse/videos/${encodeURIComponent(cat)}`)
-        .then(res => res.json())
-        .then(data => {
-          videoLists[selected] = data.videos || [];
-          setVideoLists([...videoLists]);
+        .then((res) => res.json())
+        .then((data) => {
+          const updatedVideoLists = [...videoLists];
+          updatedVideoLists[selected] = data.videos || [];
+          setVideoLists(updatedVideoLists);
         });
-    } else {
-      alert("Failed to remove video.");
-    }
+    } else alert("Failed to remove video.");
   };
 
   return (
@@ -184,55 +164,24 @@ const Studverse = () => {
                 type="text"
                 placeholder="New Category"
                 value={newCategory}
-                onChange={e => setNewCategory(e.target.value)}
+                onChange={(e) => setNewCategory(e.target.value)}
                 className="rounded px-2 py-1 text-black w-32 mr-2"
               />
-              <button type="submit" className="px-3 py-1 bg-brand-purple text-white rounded">Add</button>
+              <button type="submit" className="px-3 py-1 bg-brand-purple text-white rounded">
+                Add
+              </button>
             </form>
           )}
-          <button className="px-5 py-2 rounded-full font-semibold bg-white/10 text-white/70 hover:bg-brand-pink">+ Show more</button>
+          <button className="px-5 py-2 rounded-full font-semibold bg-white/10 text-white/70 hover:bg-brand-pink">
+            + Show more
+          </button>
         </div>
         <div className="w-full text-center mb-6">
           <span className="text-2xl font-bold text-brand-purple">
             {categories[selected] || "No Category Selected"}
           </span>
         </div>
-        {isAdmin ? (
-          <button
-            onClick={async () => {
-              await fetch("http://127.0.0.1:5001/logout", {
-                method: "POST",
-                credentials: "include",
-              });
-              setIsAdmin(false);
-              alert("Logged out successfully");
-            }}
-            className="mb-4 px-6 py-2 rounded bg-red-600 text-white font-semibold"
-          >
-            Logout
-          </button>
-        ) : (
-          <button
-            onClick={() => setShowLoginForm(true)}
-            className="mb-6 px-6 py-2 rounded bg-brand-purple text-white text-lg font-semibold"
-          >
-            Admin Login
-          </button>
-        )}
-        {showLoginForm && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="bg-black rounded-xl p-6 w-full max-w-sm border border-white/10 text-white relative">
-              <button onClick={() => setShowLoginForm(false)} className="absolute top-3 right-3">X</button>
-              <h2 className="text-xl font-bold mb-4">Admin Login</h2>
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <input name="username" placeholder="Username" value={loginData.username} onChange={handleLoginChange} required className="rounded px-4 py-2 text-black w-full"/>
-                <input type="password" name="password" placeholder="Password" value={loginData.password} onChange={handleLoginChange} required className="rounded px-4 py-2 text-black w-full"/>
-                <button type="submit" className="w-full bg-brand-purple text-white px-4 py-2 rounded font-semibold">Login</button>
-              </form>
-            </div>
-          </div>
-        )}
-        {isAdmin && categories[selected] && (
+        {isAdmin && (
           <form className="mb-8 flex gap-2 w-full justify-center" onSubmit={handleAddVideo}>
             <input
               type="text"
@@ -241,7 +190,10 @@ const Studverse = () => {
               onChange={(e) => setNewUrl(e.target.value)}
               className="rounded px-4 py-2 text-black w-80"
             />
-            <button type="submit" className="px-5 py-2 rounded bg-brand-purple text-white font-semibold">
+            <button
+              type="submit"
+              className="px-5 py-2 rounded bg-brand-purple text-white font-semibold"
+            >
               Add Video
             </button>
           </form>
@@ -250,7 +202,10 @@ const Studverse = () => {
           {(videoLists[selected] || []).map((url, i) => {
             const vid = getYouTubeId(url);
             return vid ? (
-              <div key={vid + i} className="relative group bg-white/5 rounded-lg hover:shadow-lg flex flex-col">
+              <div
+                key={vid + i}
+                className="relative group bg-white/5 rounded-lg hover:shadow-lg flex flex-col"
+              >
                 {isAdmin && (
                   <button
                     onClick={() => handleRemoveVideo(url)}
