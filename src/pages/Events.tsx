@@ -44,11 +44,7 @@ const Events: React.FC<EventsProps> = ({ userEmail }) => {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // const ADMIN_EMAILS = [
-  //   "sreejajnvkoppula@gmail.com",
-  //   "admin2@example.com",
-  //   "admin3@example.com",
-  // ];
+ 
   const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(",").map(email => email.trim()) || [];
 const isAdmin = userEmail ? adminEmails.includes(userEmail) : false;
 
@@ -184,9 +180,9 @@ const isAdmin = userEmail ? adminEmails.includes(userEmail) : false;
         className="container mx-auto px-4 pt-24 pb-16 relative"
       >
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-xl text-center text-white mb-2">
+          {/* <h2 className="text-xl text-center text-white mb-2">
             Logged in as: <b>{userEmail || "Guest"}</b>
-          </h2>
+          </h2> */}
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-pink">
             Next-Gen Events
           </h1>

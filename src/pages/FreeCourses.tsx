@@ -9,11 +9,7 @@ import { Search } from "lucide-react";
 
 const knownLanguages = ["Hindi", "English", "Telugu"];
 const MODES = ["Coursera", "Youtube"];
-// const ADMIN_EMAILS = [
-//   "sreejajnvkoppula@gmail.com",
-//   "admin2@example.com",
-//   "admin3@example.com",
-// ];
+
  
 
 interface FreeCoursesProps {

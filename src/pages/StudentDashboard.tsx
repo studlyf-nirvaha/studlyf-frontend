@@ -16,12 +16,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import AdGrid from "@/components/ui/AdGrid";
 
-// List of admin emails
-const ADMIN_EMAILS = [
-  "sreejajnvkoppula@gmail.com",
-  "admin2@example.com",
-  "admin3@example.com"
-];
+
+
+// load admin emails from Vite env var VITE_ADMIN_EMAILS (comma separated)
+const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(",").map(e => e.trim()).filter(Boolean) || [];
+const isAdminFlag = (userEmail?: string) => userEmail ? adminEmails.includes(userEmail) : false;
+
+
 
 interface EditProfileData {
   displayName: string;
@@ -124,7 +125,7 @@ export default function StudentProfileDashboard() {
   // For admin tabs
   const [selectedTab, setSelectedTab] = useState('events');
   const userEmail = profile?.email || user?.email;
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail) : false;
+  const isAdmin = isAdminFlag(userEmail);
 
   // Fetch profile from backend
   useEffect(() => {
