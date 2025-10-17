@@ -14,6 +14,7 @@ import FreeCourses from './FreeCourses';
 import Studverse from './Studverse';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import AdGrid from "@/components/ui/AdGrid";
 
 // List of admin emails
 const ADMIN_EMAILS = [
@@ -321,36 +322,40 @@ export default function StudentProfileDashboard() {
   if (!user) return <div className="text-white p-8">Please log in.</div>;
 
   if (isAdmin) {
-    return (
-      <>
-        <Navbar />
-        <div className="container mx-auto px-4 pt-24 pb-16">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-white font-semibold">Logged in as: {userEmail}</div>
-            <Button onClick={handleLogout} variant="destructive">
-              Logout
-            </Button>
-          </div>
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-            <TabsList>
-              <TabsTrigger value="events">Events</TabsTrigger>
-              <TabsTrigger value="freeCourses">Free Courses</TabsTrigger>
-              <TabsTrigger value="studverse">Studverse</TabsTrigger>
-            </TabsList>
-            <TabsContent value="events">
-              <Events userEmail={userEmail} />
-            </TabsContent>
-            <TabsContent value="freeCourses">
-              <FreeCourses userEmail={userEmail} />
-            </TabsContent>
-            <TabsContent value="studverse">
-              <Studverse userEmail={userEmail} />
-            </TabsContent>
-          </Tabs>
+     return (
+    <>
+      <Navbar />
+      <div className="container mx-auto px-4 pt-24 pb-16">
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-white font-semibold">Logged in as: {userEmail}</div>
+          <Button onClick={handleLogout} variant="destructive">
+            Logout
+          </Button>
         </div>
-        <Footer />
-      </>
-    );
+        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <TabsList>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="freeCourses">Free Courses</TabsTrigger>
+            <TabsTrigger value="studverse">Studverse</TabsTrigger>
+            <TabsTrigger value="ads">Ads</TabsTrigger>
+          </TabsList>
+          <TabsContent value="events">
+            <Events userEmail={userEmail} />
+          </TabsContent>
+          <TabsContent value="freeCourses">
+            <FreeCourses userEmail={userEmail} />
+          </TabsContent>
+          <TabsContent value="studverse">
+            <Studverse userEmail={userEmail} />
+          </TabsContent>
+          <TabsContent value="ads">
+            <AdGrid userEmail={userEmail} />
+          </TabsContent>
+        </Tabs>
+      </div>
+      <Footer />
+    </>
+  );
   }
 
   // --- STUDENT/NON-ADMIN DASHBOARD ---

@@ -1,92 +1,130 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
-// Utility to get all images from public/adgrid/ (works in dev/build, not in static public at runtime)
-function getAdImages() {
-  // In Vite/CRA, you can't read the public folder at runtime, so we use a static import context for dev/build
-  // For production, user must add images to /public/adgrid/ and update this list if needed
-  // You can automate this with a script or use a backend for dynamic listing
-  const contextImages = [
-    '/Bowerschool.png'
-    // Add more as needed
-  ];
-  return contextImages;
+interface Ad {
+  id: number;
+  image: string;
+  link: string;
 }
 
-const IMAGE_INTERVAL = 5000; // 5 seconds
-
-function useAdImageCycle(images: string[], interval = 10000) {
-  const [index, setIndex] = useState(0);
-  const [fade, setFade] = useState(true);
-
-  useEffect(() => {
-    const fadeOut = setTimeout(() => setFade(false), interval - 800);
-    const timer = setTimeout(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-      setFade(true);
-    }, interval);
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(fadeOut);
-    };
-  }, [index, images.length, interval]);
-
-  return { src: images[index], fade };
+interface AdGridProps {
+  userEmail?: string;
 }
 
-const AdGrid: React.FC = () => {
-  const images = getAdImages();
-  const [index, setIndex] = useState(0);
+const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(",").map(e => e.trim()) || [];
+const isAdminFlag = (email?: string) => (email ? adminEmails.includes(email) : false);
+
+const AdGrid: React.FC<AdGridProps> = ({ userEmail }) => {
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
+  const [link, setLink] = useState("");
 
   useEffect(() => {
-    if (images.length <= 1) return;
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-    }, IMAGE_INTERVAL);
-    return () => clearInterval(timer);
-  }, [images.length]);
+    setIsAdmin(isAdminFlag(userEmail));
+    fetchAds();
+  }, [userEmail]);
 
-  if (images.length === 0) {
-    return (
-      <div style={{ width: '100vw', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#181818', color: '#fff', fontSize: 24, borderRadius: 24 }}>
-        No images found in /public/adgrid/
-      </div>
-    );
-  }
+  const fetchAds = async () => {
+    const res = await fetch("http://127.0.0.1:5001/ads");
+    const data = await res.json();
+    setAds(data.ads || []);
+  };
+
+  const handleAddAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!image || !link) return alert("Please select image and link.");
+
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("link", link);
+
+    const res = await fetch("http://127.0.0.1:5001/ads", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("Ad added successfully!");
+      setImage(null);
+      setLink("");
+      fetchAds();
+    } else {
+      alert(data.error || "Failed to add ad.");
+    }
+  };
+
+  const handleDeleteAd = async (id: number) => {
+    if (!window.confirm("Delete this ad?")) return;
+    const res = await fetch(`http://127.0.0.1:5001/ads/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("Ad deleted!");
+      fetchAds();
+    } else {
+      alert(data.error || "Failed to delete ad.");
+    }
+  };
 
   return (
-    <div
-      style={{
-        background: "#121212",
-        padding: 0,
-        borderRadius: 24,
-        width: '100vw',
-        maxWidth: '100vw',
-        margin: 0,
-        boxShadow: "0 6px 32px 0 rgba(0,0,0,0.18)",
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '80vh',
-        flexDirection: 'column',
-      }}
-    >
-      <div style={{ width: '100vw', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 24, overflow: 'hidden', background: '#181818' }}>
-        <a href="https://bowerschool.com/lead" target="_blank" rel="noopener noreferrer">
-          <img
-            src={images[index]}
-            alt={`Ad ${index + 1}`}
-            style={{
-              width: '100vw',
-              height: '80vh',
-              objectFit: 'contain',
-              objectPosition: 'center',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-              display: 'block',
-            }}
+    <section className="w-full py-16 bg-black text-white flex flex-col items-center">
+      <h2 className="text-4xl sm:text-5xl font-extrabold mb-10 bg-gradient-to-r from-brand-purple to-brand-pink bg-clip-text text-transparent uppercase">
+        Advertisement Section
+      </h2>
+
+      {isAdmin && (
+        <form onSubmit={handleAddAd} className="flex flex-col sm:flex-row gap-3 mb-10">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files?.[0] || null)}
+            className="bg-white text-black rounded px-3 py-2"
           />
-        </a>
+          <input
+            type="text"
+            placeholder="Enter Ad Link"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            className="rounded px-3 py-2 text-black w-64"
+          />
+          <button
+            type="submit"
+            className="bg-brand-purple text-white px-5 py-2 rounded font-semibold"
+          >
+            Add Ad
+          </button>
+        </form>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl w-full">
+        {ads.map((ad) => (
+          <div
+            key={ad.id}
+            className="relative bg-white/10 rounded-lg overflow-hidden hover:shadow-lg"
+          >
+            {isAdmin && (
+              <button
+                onClick={() => handleDeleteAd(ad.id)}
+                className="absolute top-2 right-2 bg-red-600 text-white rounded px-2 py-1 text-xs"
+              >
+                ✕
+              </button>
+            )}
+            <a href={ad.link} target="_blank" rel="noopener noreferrer">
+              <img
+                src={`http://127.0.0.1:5001${ad.image}`}
+                alt="Ad"
+                className="object-cover w-full aspect-square"
+              />
+            </a>
+          </div>
+        ))}
       </div>
-    </div>
+    </section>
   );
 };
 
