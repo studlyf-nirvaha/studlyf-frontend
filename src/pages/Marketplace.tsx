@@ -42,7 +42,6 @@ const categories = [
 ];
 
 const conditions = ["New", "Like New", "Good", "Fair", "Poor"];
-
 const cardBlack = "#000000";
 
 const Marketplace = () => {
@@ -80,9 +79,7 @@ const Marketplace = () => {
     },
   ]);
 
-  useEffect(() => {
-    // For mount animation or future use
-  }, []);
+  useEffect(() => {}, []);
 
   const filteredListings = listings.filter((listing) => {
     const matchesCategory =
@@ -114,6 +111,9 @@ const Marketplace = () => {
     setListings([newListing, ...listings]);
   };
 
+  const pinkButton =
+    "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-all duration-300";
+
   return (
     <div className="min-h-screen w-full bg-black">
       <Navbar />
@@ -123,9 +123,7 @@ const Marketplace = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
           className="w-full max-w-5xl rounded-3xl shadow-xl border border-white/10 mt-10 mb-8 pb-10 px-5 md:px-12 pt-10"
-          style={{
-            background: cardBlack,
-          }}
+          style={{ background: cardBlack }}
         >
           {/* Header */}
           <div className="flex flex-col md:flex-row md:justify-between items-center mb-10 gap-6">
@@ -139,7 +137,7 @@ const Marketplace = () => {
             </div>
             <Button
               onClick={() => setShowListingForm(true)}
-              className="gap-2 bg-blue-700 hover:bg-blue-600 text-white px-7 py-3 rounded-full text-lg font-semibold shadow-lg transition"
+              className={`${pinkButton} px-6 py-2 rounded-full`}
             >
               <Plus size={22} /> Post New Listing
             </Button>
@@ -150,11 +148,11 @@ const Marketplace = () => {
             <input
               type="text"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search for books, electronics, tickets..."
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-[#000000] text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-black text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"
             />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400">
               <Search size={20} />
             </span>
           </div>
@@ -273,7 +271,7 @@ const Marketplace = () => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg transition"
+                    className={`w-full rounded-full ${pinkButton}`}
                   >
                     Create Listing
                   </Button>
@@ -287,13 +285,11 @@ const Marketplace = () => {
             {categories.map((category) => (
               <button
                 key={category}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full font-medium text-base shadow transition-all duration-200
-                  ${
-                    selectedCategory === category
-                      ? "bg-blue-700 text-white border border-blue-600 shadow-lg"
-                      : "bg-black text-white/70 border border-white/10 hover:border-blue-400"
-                  }
-                `}
+                className={`flex items-center gap-2 px-6 py-2 rounded-full font-medium text-base shadow transition-all duration-200 ${
+                  selectedCategory === category
+                    ? `${pinkButton}`
+                    : "bg-black text-white/70 border border-white/10 hover:border-pink-500"
+                }`}
                 onClick={() => setSelectedCategory(category)}
               >
                 {categoryIcons[category]}
@@ -309,12 +305,11 @@ const Marketplace = () => {
                 key={listing.id}
                 whileHover={{
                   scale: 1.02,
-                  boxShadow: "0 6px 40px 0 rgba(50,90,255,0.16)",
+                  boxShadow: "0 6px 40px 0 rgba(217,70,239,0.25)",
                 }}
-                className="rounded-2xl border border-white/10 bg-black shadow-lg shadow-black/50 p-7 flex flex-col md:flex-row items-center gap-6 relative transition"
+                className="rounded-2xl border border-white/10 bg-black shadow-lg p-7 flex flex-col md:flex-row items-center gap-6 relative transition"
               >
-                {/* Image */}
-                <div className="w-24 h-24 flex items-center justify-center bg-black rounded-full shadow-lg border border-blue-600/20 overflow-hidden">
+                <div className="w-24 h-24 flex items-center justify-center bg-black rounded-full shadow-lg border border-pink-600/30 overflow-hidden">
                   {typeof listing.image === "string" ? (
                     <img
                       src={listing.image}
@@ -325,18 +320,18 @@ const Marketplace = () => {
                     listing.image
                   )}
                 </div>
-                {/* Listing Info */}
+
                 <div className="flex-1 w-full md:w-auto mt-5 md:mt-0">
                   <div className="flex items-center justify-between w-full">
                     <h2 className="text-2xl font-semibold text-white">
                       {listing.title}
                     </h2>
-                    <span className="font-bold text-lg text-blue-400">
+                    <span className="font-bold text-lg text-pink-400">
                       {listing.price}
                     </span>
                   </div>
                   <div className="flex gap-2 mt-2 mb-1">
-                    <span className="px-3 py-1 rounded-full bg-blue-900 text-blue-200 text-xs font-semibold">
+                    <span className="px-3 py-1 rounded-full bg-pink-900 text-pink-200 text-xs font-semibold">
                       {listing.category}
                     </span>
                     <span className="px-3 py-1 rounded-full bg-black text-white/80 text-xs border border-white/10">
@@ -349,14 +344,14 @@ const Marketplace = () => {
                   <div className="text-white/40 text-xs mb-2">
                     {listing.listedOn}
                   </div>
+
                   {/* CTA */}
                   <div className="flex items-center gap-3 mt-3">
                     {listing.category === "Books" && listing.download ? (
                       <a
                         href={listing.download}
                         download
-                        className="bg-blue-700 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg transition"
-                        onClick={(e) => e.stopPropagation()}
+                        className={`px-6 py-2 rounded-full font-semibold ${pinkButton}`}
                       >
                         Download
                       </a>
@@ -365,15 +360,14 @@ const Marketplace = () => {
                         href="https://wa.me/9182591431?text=Hi%2C%20I%20am%20interested%20in%20buying%20the%20Skullcandy%20product%20listed%20on%20StudLYF%20Marketplace."
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-blue-700 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold shadow-lg transition"
-                        onClick={(e) => e.stopPropagation()}
+                        className={`px-6 py-2 rounded-full font-semibold ${pinkButton}`}
                       >
                         Buy Now
                       </a>
                     )}
                     {listing.category === "Books" && (
                       <button
-                        className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-700 hover:bg-blue-600 text-white transition-colors shadow-lg"
+                        className={`w-9 h-9 flex items-center justify-center rounded-full ${pinkButton}`}
                         title="Favorite"
                       >
                         <Heart size={20} />
@@ -383,17 +377,6 @@ const Marketplace = () => {
                 </div>
               </motion.div>
             ))}
-            {filteredListings.length === 0 && (
-              <div className="col-span-2 text-center py-16">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold mb-2 text-white">
-                  No listings found
-                </h3>
-                <p className="text-white/70">
-                  Try adjusting your filters or search criteria
-                </p>
-              </div>
-            )}
           </div>
         </motion.section>
       </main>

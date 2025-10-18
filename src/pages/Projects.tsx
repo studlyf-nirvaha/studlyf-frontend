@@ -4,8 +4,21 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// ✅ Helper — removes repeated first letters/words
+const fixText = (text: string = "") => {
+  if (!text) return "";
+
+  // Remove repeated first letters at start (e.g., "GGoogle" → "Google")
+  text = text.replace(/^([A-Za-z])\1+/g, "$1");
+
+  // Remove repeated first word (e.g., "Google Google Data Analytics" → "Google Data Analytics")
+  text = text.replace(/^(\b\w+\b)(\s+\1\b)+/i, "$1");
+
+  return text.trim();
+};
+
 const Projects = () => {
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("http://localhost:5001/projects")
@@ -49,12 +62,14 @@ const Projects = () => {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-2xl font-bold bg-gradient-to-r from-fuchsia-400 via-pink-400 to-purple-500 bg-clip-text text-transparent drop-shadow-sm">
-                            {project.name || project.title}
+                            {fixText(project.name || project.title)}
                           </span>
                         </div>
-                        <div className="text-pink-400 font-medium mb-2">{project.provider}</div>
+                        <div className="text-pink-400 font-medium mb-2">
+                          {fixText(project.provider)}
+                        </div>
                         <div className="text-white/90 text-base line-clamp-5 min-h-[100px]">
-                          {project.description}
+                          {fixText(project.description)}
                         </div>
                       </div>
                       <div className="flex items-center justify-center mt-4">

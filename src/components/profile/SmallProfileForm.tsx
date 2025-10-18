@@ -39,7 +39,9 @@ export default function SmallProfileForm({ onClose, forceRequired }: SmallProfil
     resumeFiles: [] as string[],
     projectFiles: [] as string[],
     certificationFiles: [] as string[],
+    projects: Array.from({ length: 1 }).map(() => ({ githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' })),
   });
+  const [visibleProjectsCount, setVisibleProjectsCount] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -103,6 +105,7 @@ export default function SmallProfileForm({ onClose, forceRequired }: SmallProfil
         resumeFiles: form.resumeFiles || [],
         projectFiles: form.projectFiles || [],
         certificationFiles: form.certificationFiles || [],
+        projects: (form.projects || []).slice(0, 6),
         isOnline: true,
         completedProfile: true
       };
@@ -187,6 +190,52 @@ export default function SmallProfileForm({ onClose, forceRequired }: SmallProfil
       )}
       {step === 2 && (
         <>
+          <div className="mt-4">
+            <div className="text-black font-semibold mb-2">Projects (up to 6)</div>
+            {(form.projects || []).slice(0, Math.min(visibleProjectsCount, 6)).map((p, idx) => (
+              <div key={idx} className="border border-black rounded-lg p-2 mb-2 bg-white">
+                <div className="text-xs text-black/70 mb-1">Project {idx + 1}</div>
+                <input placeholder="GitHub URL" value={p.githubUrl} onChange={e => {
+                  const projects = [...form.projects];
+                  projects[idx] = { ...(projects[idx] || { githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' }), githubUrl: e.target.value };
+                  setForm({ ...form, projects });
+                }} className="block w-full mt-1 p-2 rounded bg-white text-black border border-black focus:ring-2 focus:ring-brand-purple text-base" />
+                <input placeholder="Deployed Link" value={p.liveUrl} onChange={e => {
+                  const projects = [...form.projects];
+                  projects[idx] = { ...(projects[idx] || { githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' }), liveUrl: e.target.value };
+                  setForm({ ...form, projects });
+                }} className="block w-full mt-2 p-2 rounded bg-white text-black border border-black focus:ring-2 focus:ring-brand-purple text-base" />
+                <input placeholder="YouTube URL" value={p.youtubeUrl} onChange={e => {
+                  const projects = [...form.projects];
+                  projects[idx] = { ...(projects[idx] || { githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' }), youtubeUrl: e.target.value };
+                  setForm({ ...form, projects });
+                }} className="block w-full mt-2 p-2 rounded bg-white text-black border border-black focus:ring-2 focus:ring-brand-purple text-base" />
+                <textarea placeholder="Description" value={p.description} onChange={e => {
+                  const projects = [...form.projects];
+                  projects[idx] = { ...(projects[idx] || { githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' }), description: e.target.value };
+                  setForm({ ...form, projects });
+                }} className="block w-full mt-2 p-2 rounded bg-white text-black border border-black focus:ring-2 focus:ring-brand-purple text-base" rows={2} />
+              </div>
+            ))}
+            {visibleProjectsCount < 6 && (
+              <button
+                type="button"
+                className="bg-brand-purple text-white rounded-full px-4 py-2 font-bold hover:bg-brand-pink transition"
+                onClick={() => {
+                  setForm(prev => {
+                    const next = { ...prev } as typeof form;
+                    if ((next.projects || []).length < visibleProjectsCount + 1) {
+                      next.projects = [...next.projects, { githubUrl: '', liveUrl: '', youtubeUrl: '', description: '' }];
+                    }
+                    return next;
+                  });
+                  setVisibleProjectsCount(c => Math.min(c + 1, 6));
+                }}
+              >
+                Add Project
+              </button>
+            )}
+          </div>
           <label className="text-black font-semibold">Branch
             <input name="branch" value={form.branch} onChange={handleChange} required className="block w-full mt-1 p-2 rounded bg-white text-black border border-black focus:ring-2 focus:ring-brand-purple text-base" />
           </label>

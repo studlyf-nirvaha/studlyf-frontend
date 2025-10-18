@@ -2,14 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { Brain, Users, Heart } from "lucide-react"; 
-import logo from "../logo3.png"; 
+// import logo from "../logo3.png"; 
 import WhystudyImg from "../Whystudlyf.jpeg";
 import HowitwImg from "../Howitw.jpg";
 
 // You should place your animation video (e.g., mp4, webm) in your public folder or import it.
-// Example: import heroVideo from "../videos/your-3d-hero-animation.mp4";
-// For now, we'll use a public folder path:
-const heroVideo = "/animi/loop-animation.mp4"; // <-- update with your actual video path
+const heroVideo = "/animi/lop.mp4"; // <-- update with your actual video path
 
 const Landing = () => {
   const [mounted, setMounted] = useState(false);
@@ -18,7 +16,7 @@ const Landing = () => {
   const glowY1 = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const glowY2 = useTransform(scrollYProgress, [0, 1], ["0%", "-30%"]);
   const navigate = useNavigate();
-  const aboutRef = useRef<HTMLDivElement>(null);
+  const aboutRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -84,7 +82,7 @@ const Landing = () => {
           muted
           playsInline
         />
-        <motion.img
+        {/* <motion.img
           src={logo}
           alt="Studlyf Logo"
           className="w-[70%] md:w-[50%] lg:w-[40%] drop-shadow-[0_0_40px_rgba(236,72,153,0.6)] rounded-xl z-10"
@@ -92,12 +90,11 @@ const Landing = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut" }}
           whileHover={{ scale: 1.05, rotateX: 5, rotateY: -5 }}
-        />
+        /> */}
       </div>
 
       {/* Scrollable Sections */}
       <div ref={aboutRef} className="relative z-20 w-full max-w-6xl mx-auto px-6 space-y-24">
-        {/* --- Sections unchanged --- */}
         {/* About Section */}
         <section className="relative text-center py-20 overflow-hidden">
           <div className="absolute inset-0 -z-10">
@@ -247,6 +244,63 @@ const Landing = () => {
               <p className="mt-4 text-gray-300 text-lg">
                 Monitor your progress and optimize your study habits.
               </p>
+            </motion.div>
+          </div>
+        </section>
+        {/* Reviews Section - Place right after How It Works */}
+        <section className="text-center py-16 relative">
+          <div className="absolute inset-0 -z-10">
+            {/* Optional: add a reviews background image here */}
+            <div className="absolute inset-0 bg-black/80" />
+          </div>
+          <h2 className="text-5xl font-extrabold mb-10 text-pink-600">
+            What Our <span className="text-pink-500">Students Say</span>
+          </h2>
+          <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+            {/* Review 1 */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="bg-black/90 p-8 rounded-2xl shadow-lg border border-pink-900/20"
+            >
+              <p className="text-gray-200 text-lg mb-6 italic">
+                “Attending ConnectX at T-Hub, organized by StudLyf, was a turning point for me. I found an internship with Gen AI Lake through it—an opportunity I might have missed otherwise. ConnectX truly bridges students with real industry experiences. Grateful to StudLyf for creating such an impactful platform!”
+              </p>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-pink-400 font-semibold">Hemasree</span>
+                <span className="text-xs text-gray-400">BVRIT, 2nd Year</span>
+              </div>
+            </motion.div>
+            {/* Review 2 */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.0 }}
+              className="bg-black/90 p-8 rounded-2xl shadow-lg border border-pink-900/20"
+            >
+              <p className="text-gray-200 text-lg mb-6 italic">
+                “STUDLYF events helped me explore the world beyond classrooms. I was once confined to four walls, but after joining, I’ve attended many events and hackathons that broadened my horizons.”
+              </p>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-pink-400 font-semibold">Sai</span>
+                <span className="text-xs text-gray-400">Gokaraju Rangaraju, 2nd Year</span>
+              </div>
+            </motion.div>
+            {/* Review 3 */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2 }}
+              className="bg-black/90 p-8 rounded-2xl shadow-lg border border-pink-900/20"
+            >
+              <p className="text-gray-200 text-lg mb-6 italic">
+                “Being part of this community helped me grow through learning, mentorship, and events like ConnectX. The sessions on profile building, SIH, and hackathons boosted my clarity and confidence to explore innovation and startups.”
+              </p>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-pink-400 font-semibold">Sathvika</span>
+                <span className="text-xs text-gray-400">Nxtwave</span>
+              </div>
             </motion.div>
           </div>
         </section>

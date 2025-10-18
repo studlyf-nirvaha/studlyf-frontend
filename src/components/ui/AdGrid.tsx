@@ -1,92 +1,208 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// Utility to get all images from public/adgrid/ (works in dev/build, not in static public at runtime)
-function getAdImages() {
-  // In Vite/CRA, you can't read the public folder at runtime, so we use a static import context for dev/build
-  // For production, user must add images to /public/adgrid/ and update this list if needed
-  // You can automate this with a script or use a backend for dynamic listing
-  const contextImages = [
-    '/Bowerschool.png'
-    // Add more as needed
-  ];
-  return contextImages;
+interface Ad {
+  id: number;
+  image: string;
+  link: string;
 }
 
-const IMAGE_INTERVAL = 5000; // 5 seconds
-
-function useAdImageCycle(images: string[], interval = 10000) {
-  const [index, setIndex] = useState(0);
-  const [fade, setFade] = useState(true);
-
-  useEffect(() => {
-    const fadeOut = setTimeout(() => setFade(false), interval - 800);
-    const timer = setTimeout(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-      setFade(true);
-    }, interval);
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(fadeOut);
-    };
-  }, [index, images.length, interval]);
-
-  return { src: images[index], fade };
+interface AdGridProps {
+  userEmail?: string;
 }
 
-const AdGrid: React.FC = () => {
-  const images = getAdImages();
-  const [index, setIndex] = useState(0);
+// Admin logic
+const adminEmails =
+  import.meta.env.VITE_ADMIN_EMAILS?.split(",").map((e) => e.trim()) || [];
 
+const isAdminFlag = (email?: string) =>
+  email ? adminEmails.includes(email) : false;
+
+const AdGrid = ({ userEmail }: AdGridProps) => {
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
+  const [link, setLink] = useState("");
+  const [current, setCurrent] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load ads from backend
   useEffect(() => {
-    if (images.length <= 1) return;
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
-    }, IMAGE_INTERVAL);
-    return () => clearInterval(timer);
-  }, [images.length]);
+    setIsAdmin(isAdminFlag(userEmail));
+    fetchAds();
+  }, [userEmail]);
 
-  if (images.length === 0) {
-    return (
-      <div style={{ width: '100vw', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#181818', color: '#fff', fontSize: 24, borderRadius: 24 }}>
-        No images found in /public/adgrid/
-      </div>
-    );
-  }
+  const fetchAds = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:5001/ads");
+      const data = await res.json();
+      setAds(data.ads || []);
+    } catch (error) {
+      console.error("Failed to fetch ads:", error);
+    }
+  };
+
+  // Auto-slide effect
+  useEffect(() => {
+    startAutoSlide();
+    return stopAutoSlide;
+  }, [ads]);
+
+  const startAutoSlide = () => {
+    stopAutoSlide(); // clear any existing interval
+    if (ads.length > 0) {
+      intervalRef.current = setInterval(() => {
+        setCurrent((prev) => (prev + 1) % ads.length);
+      }, 5000);
+    }
+  };
+
+  const stopAutoSlide = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+
+  const nextSlide = () => setCurrent((prev) => (prev + 1) % ads.length);
+  const prevSlide = () => setCurrent((prev) => (prev - 1 + ads.length) % ads.length);
+
+  const handleAddAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!image || !link) return alert("Please select image and link.");
+
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("link", link);
+
+    const res = await fetch("http://127.0.0.1:5001/ads", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("Ad added successfully!");
+      setImage(null);
+      setLink("");
+      fetchAds();
+    } else {
+      alert(data.error || "Failed to add ad.");
+    }
+  };
+
+  const handleDeleteAd = async (id: number) => {
+    if (!window.confirm("Delete this ad?")) return;
+    const res = await fetch(`http://127.0.0.1:5001/ads/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("Ad deleted!");
+      fetchAds();
+    } else {
+      alert(data.error || "Failed to delete ad.");
+    }
+  };
 
   return (
-    <div
-      style={{
-        background: "#121212",
-        padding: 0,
-        borderRadius: 24,
-        width: '100vw',
-        maxWidth: '100vw',
-        margin: 0,
-        boxShadow: "0 6px 32px 0 rgba(0,0,0,0.18)",
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '80vh',
-        flexDirection: 'column',
-      }}
-    >
-      <div style={{ width: '100vw', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 24, overflow: 'hidden', background: '#181818' }}>
-        <a href="https://bowerschool.com/lead" target="_blank" rel="noopener noreferrer">
-          <img
-            src={images[index]}
-            alt={`Ad ${index + 1}`}
-            style={{
-              width: '100vw',
-              height: '80vh',
-              objectFit: 'contain',
-              objectPosition: 'center',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-              display: 'block',
-            }}
-          />
-        </a>
+    <section className="w-full py-16 flex flex-col items-center">
+      <div className="w-full max-w-7xl bg-gradient-to-r from-purple-700 to-pink-500 rounded-2xl p-6 shadow-2xl">
+        <h2 className="text-4xl sm:text-5xl font-extrabold mb-10 text-white uppercase text-center">
+        </h2>
+
+        {/* Admin upload form */}
+        {isAdmin && (
+          <form
+            onSubmit={handleAddAd}
+            className="flex flex-col sm:flex-row gap-3 mb-10 justify-center"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files?.[0] || null)}
+              className="bg-white text-black rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Enter Ad Link"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="rounded px-3 py-2 text-black w-64"
+            />
+            <button
+              type="submit"
+              className="bg-black text-white px-5 py-2 rounded font-semibold hover:bg-gray-800 transition"
+            >
+              Add Ad
+            </button>
+          </form>
+        )}
+
+        {/* Carousel Section */}
+        {ads.length > 0 ? (
+          <div
+            className="relative w-full overflow-hidden rounded-2xl shadow-lg"
+            onMouseEnter={stopAutoSlide}
+            onMouseLeave={startAutoSlide}
+          >
+            {/* Slide Container */}
+            <div
+              className="flex transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${current * 100}%)` }}
+            >
+              {ads.map((ad) => (
+                <div key={ad.id} className="relative w-full flex-shrink-0">
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteAd(ad.id)}
+                      className="absolute top-3 right-3 bg-red-600 text-white rounded px-2 py-1 text-xs z-10"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  <a href={ad.link} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={`http://127.0.0.1:5001${ad.image}`}
+                      alt="Ad"
+                      className="w-full h-[300px] sm:h-[400px] object-cover rounded-2xl"
+                    />
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={prevSlide}
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 p-2 rounded-full text-white hover:bg-black/60"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 p-2 rounded-full text-white hover:bg-black/60"
+            >
+              <ChevronRight size={24} />
+            </button>
+
+            {/* Dots Indicator */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {ads.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrent(index)}
+                  className={`w-3 h-3 rounded-full ${
+                    current === index ? "bg-white" : "bg-white/50"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-white text-center mt-6">No ads available.</p>
+        )}
       </div>
-    </div>
+    </section>
   );
 };
 

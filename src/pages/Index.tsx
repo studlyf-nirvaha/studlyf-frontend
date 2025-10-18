@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import StudentTestimonials from "@/components/StudentTestimonials";
 import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -264,15 +265,14 @@ const Index = () => {
 
 
       {/* Black background moved to the farthest back for animation visibility */}
-      <ContainerScroll titleComponent={<></>}>
-        <div className="flex flex-col items-center justify-center h-full px-2 sm:px-4 mb-24">
-          {/* Ads Grid */}
-          <AdGrid />
-          {/* Example feature cards or content can go here */}
-          {/* Removed feature cards as per user request */}
-          {/* Add more cards or content as needed */}
-        </div>
-      </ContainerScroll>
+     
+
+<ContainerScroll titleComponent={<></>}>
+  <div className="flex flex-col items-center justify-center h-full px-2 sm:px-4 mb-24">
+    <AdGrid />
+  </div>
+</ContainerScroll>
+
       {/* Single Card Carousel with all features */}
       <div className="my-8 sm:my-12 px-2 sm:px-0 mt-[120]">
         <GradientText className="text-2xl sm:text-4xl md:text-6xl font-bold mt-32 mb-10 block text-center text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
@@ -489,6 +489,8 @@ const Index = () => {
         transition={{ duration: 1, ease: 'easeOut' }}
       >
       </motion.div>
+
+     <StudentTestimonials />
 
       {/* Collaboration partners - autoplay marquee like StatsSection */}
       <motion.div

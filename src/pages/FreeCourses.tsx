@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
@@ -9,203 +8,180 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Search } from "lucide-react";
 
 const knownLanguages = ["Hindi", "English", "Telugu"];
+const MODES = ["Coursera", "Youtube"];
+// const ADMIN_EMAILS = [
+//   "sreejajnvkoppula@gmail.com",
+//   "admin2@example.com",
+//   "admin3@example.com",
+// ];
+ 
 
-const FreeCourses = () => {
+interface FreeCoursesProps {
+  userEmail?: string;
+}
+
+const FreeCourses: React.FC<FreeCoursesProps> = ({ userEmail }) => {
+  const [mode, setMode] = useState("Coursera");
   const [courses, setCourses] = useState([]);
+  const [adminCourses, setAdminCourses] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
-
-  useEffect(() => {
-    fetch("http://localhost:5001/free-courses")
-      .then((res) => res.json())
-      .then((data) => {
-        setCourses(data.courses || []);
-      })
-      .catch(console.error);
-  }, []);
-
-  const languageTags = Array.from(
-    new Set(courses.flatMap((c) => c.tags?.filter((tag) => knownLanguages.includes(tag))) || [])
-  );
-  const otherTags = Array.from(
-    new Set(courses.flatMap((c) => c.tags?.filter((tag) => !knownLanguages.includes(tag))) || [])
-  ).sort();
-
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch =
-      (course.name || course.title || "")
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      (course.description || course.desc || "").toLowerCase().includes(search.toLowerCase());
-    const matchesTag = selectedTag === "all" || (course.tags && course.tags.includes(selectedTag));
-    const matchesLanguage =
-      selectedLanguage === "all" || (course.tags && course.tags.includes(selectedLanguage));
-    return matchesSearch && matchesTag && matchesLanguage;
+  const [form, setForm] = useState({
+    heading: "",
+    tags: "",
+    src_link: "",
+    description: ""
   });
+
+  // const isAdmin = !!(userEmail && ADMIN_EMAILS.includes(userEmail));
+const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(",").map(email => email.trim()) || [];
+const isAdmin = userEmail ? adminEmails.includes(userEmail) : false;
+  useEffect(() => {
+    if (mode === "Coursera") {
+      fetch("http://127.0.0.1:5001/free-courses")
+        .then(res => res.json())
+        .then(data => setCourses(data.courses || []));
+    } else {
+      fetch("http://127.0.0.1:5001/admin-courses")
+        .then(res => res.json())
+        .then(data => setAdminCourses(data.courses || []));
+    }
+  }, [mode]);
+
+  const filteredCourses = (mode === "Coursera" ? courses : adminCourses).filter((course) => {
+    const matchesSearch =
+      (course.name || course.heading || "")
+        .toLowerCase().includes(search.toLowerCase()) ||
+      (course.description || course.desc || "").toLowerCase().includes(search.toLowerCase());
+    if (mode === "Coursera") {
+      const matchesTag = selectedTag === "all" || (course.tags && course.tags.includes(selectedTag));
+      const matchesLanguage = selectedLanguage === "all" || (course.tags && course.tags.includes(selectedLanguage));
+      return matchesSearch && matchesTag && matchesLanguage;
+    }
+    return matchesSearch;
+  });
+
+  const handleAdminCourseAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.heading || !form.src_link) return;
+    const res = await fetch("http://127.0.0.1:5001/admin-courses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...form, tags: form.tags.split(",").map(t => t.trim()).filter(Boolean) }),
+    });
+    if (res.ok) {
+      setForm({ heading: "", tags: "", src_link: "", description: "" });
+      fetch("http://127.0.0.1:5001/admin-courses").then(res => res.json()).then(data => setAdminCourses(data.courses || []));
+    } else alert("Failed to add course.");
+  };
+
+  const handleAdminCourseRemove = async (id: number) => {
+    const res = await fetch(`http://127.0.0.1:5001/admin-courses/${id}`, {
+      method: "DELETE", credentials: "include"
+    });
+    if (res.ok) setAdminCourses(adminCourses.filter(c => c.id !== id));
+    else alert("Failed to remove course.");
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
       <div className="pt-24 pb-16 container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-blue-500">
-            Free Courses
-          </h1>
-          <p className="text-xl text-white max-w-2xl mx-auto">
-            Access quality education at no cost with our free course offerings.
-          </p>
-        </motion.div>
-
-        {/* Search and Filters */}
-        <div className="space-y-6 md:space-y-8 w-full overflow-x-hidden mb-10">
-          <div className="relative max-w-2xl mx-auto px-4 w-full">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-blue-500/30 rounded-2xl blur-xl"></div>
-            <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 backdrop-blur-sm rounded-2xl p-1 shadow-xl border border-green-500/40 w-full">
-              <div className="relative w-full">
-                <Search className="absolute left-4 md:left-6 top-1/2 transform -translate-y-1/2 text-green-400 h-5 w-5 flex-shrink-0" />
-                <Input
-                  type="text"
-                  placeholder="Type to search free courses..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-14 pr-6 py-4 text-lg bg-transparent border-0 focus:ring-0 placeholder:text-green-300 w-full text-white focus:border-green-500 rounded-xl shadow-md"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-row gap-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-gray-700/60 mx-4 w-[calc(100%-2rem)] max-w-none justify-center mt-10">
-            <div className="flex-1 max-w-[500px]">
-              <Select value={selectedLanguage} onValueChange={(v) => setSelectedLanguage(v)}>
-                <SelectTrigger className="w-full px-5 py-4 text-base rounded-xl shadow-md border-2 border-green-500/40 bg-gradient-to-r from-green-900/40 to-blue-900/40 focus:border-green-400 focus:ring-2 focus:ring-green-500">
-                  <SelectValue placeholder="All Languages" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl shadow-lg bg-gray-900 border border-green-500/30 p-2">
-                  <SelectItem value="all" className="px-5 py-3 text-base rounded-lg">
-                    All Languages
-                  </SelectItem>
-                  {languageTags.map((lang) => (
-                    <SelectItem
-                      key={lang}
-                      value={lang}
-                      className="px-5 py-3 text-base rounded-lg hover:bg-green-800/40 transition-colors duration-150"
-                    >
-                      {lang}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1 max-w-[500px]">
-              <Select value={selectedTag} onValueChange={(v) => setSelectedTag(v)}>
-                <SelectTrigger className="w-full px-5 py-4 text-base rounded-xl shadow-md border-2 border-blue-500/40 bg-gradient-to-r from-blue-900/40 to-green-900/40 focus:border-blue-400 focus:ring-2 focus:ring-blue-500">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl shadow-lg bg-gray-900 border border-blue-500/30 p-2">
-                  <SelectItem value="all" className="px-5 py-3 text-base rounded-lg">
-                    All
-                  </SelectItem>
-                  {otherTags.map((tag) => (
-                    <SelectItem
-                      key={tag}
-                      value={tag}
-                      className="px-5 py-3 text-base rounded-lg hover:bg-blue-800/40 transition-colors duration-150"
-                    >
-                      {tag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <div className="flex justify-center mb-10 gap-2">
+          {MODES.map((m) => (
+            <Button
+              key={m}
+              onClick={() => setMode(m)}
+              className={mode === m ? "bg-green-600 text-white px-4" : "bg-white/20 text-white px-4"}
+            >
+              {m}
+            </Button>
+          ))}
+          {mode === "Youtube" && isAdmin && (
+            <Button onClick={() => {
+              // Optionally add your logout code here
+              alert("Logged out (UI only). Implement actual logout.");
+            }} className="bg-red-600 px-4 ml-4">Logout</Button>
+          )}
         </div>
 
-        {/* Courses Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
+        {mode === "Youtube" && isAdmin && (
+          <form className="bg-white/10 rounded-xl p-5 max-w-2xl mx-auto mb-8" onSubmit={handleAdminCourseAdd}>
+            <div className="grid md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Heading"
+                value={form.heading}
+                onChange={e => setForm({ ...form, heading: e.target.value })}
+                className="rounded px-3 py-2 text-black"
+              />
+              <input
+                type="text"
+                placeholder="Comma separated tags"
+                value={form.tags}
+                onChange={e => setForm({ ...form, tags: e.target.value })}
+                className="rounded px-3 py-2 text-black"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="YouTube Embed Link (src)"
+              value={form.src_link}
+              onChange={e => setForm({ ...form, src_link: e.target.value })}
+              className="rounded px-3 py-2 text-black w-full my-2"
+            />
+            <textarea
+              placeholder="Description"
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              className="rounded px-3 py-2 text-black w-full my-2"
+            />
+            <button type="submit" className="bg-green-600 px-3 py-2 rounded text-white">Add Course</button>
+          </form>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredCourses.length === 0 ? (
             <div className="col-span-3 text-center text-lg text-gray-400 py-12">No courses found.</div>
           ) : (
             filteredCourses.map((course, idx) => (
-              <motion.div
-                key={course.name || idx}
-                whileHover={{ y: -8, scale: 1.03 }}
-                className={`relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl shadow-xl border-2 ${
-                  course.border || "border-gray-500"
-                } p-5 flex flex-col transition-all duration-300 group`}
-              >
-                {/* Corner Glows */}
-                <div
-                  className={`absolute -top-2 -left-2 w-8 h-8 rounded-full blur-xl opacity-60 pointer-events-none z-0 ${
-                    course.border ? course.border.replace("border-", "bg-") : "bg-gray-600"
-                  }`}
-                />
-                <div
-                  className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full blur-xl opacity-60 pointer-events-none z-0 ${
-                    course.border ? course.border.replace("border-", "bg-") : "bg-gray-600"
-                  }`}
-                />
-                {/* Title and icon */}
+              <div key={course.id || course.name || idx} className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl shadow-xl border-2 border-gray-700 p-5 flex flex-col group">
                 <div className="flex items-center gap-3 mb-3 z-10">
-                  {course.icon}
-                  <span className="text-xl font-bold text-white line-clamp-1">{course.name || course.title}</span>
+                <span className="text-xl font-bold text-white line-clamp-1">
+  {(course.name || course.heading || course.title || "")
+    .replace(/^(.)(\1+)/, "$1") // removes accidental repeated first character(s)
+    .trim()}
+</span>
+
                 </div>
-                {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-2 z-10">
-                  {course.tags?.map((tag) => (
-                    <Badge key={tag} className={`${course.badgeColor || "bg-gray-600/20 text-gray-400"} border font-medium text-xs`}>
-                      {tag}
-                    </Badge>
-                  ))}
+                  {Array.isArray(course.tags)
+                    ? course.tags.map(tag => <Badge key={tag} className="bg-gray-600/20 text-gray-400 border font-medium text-xs">{tag}</Badge>)
+                    : (course.tags || "").split(",").map(tag => tag && <Badge key={tag} className="bg-gray-600/20 text-gray-400 border font-medium text-xs">{tag.trim()}</Badge>)
+                  }
                 </div>
-                {/* Course Image */}
-                {course.image && (
-                  <img
-                    src={course.image}
-                    alt={course.name || course.title}
-                    className="w-full h-40 object-cover rounded-xl mb-3 border border-white/10"
-                    style={{ objectFit: "cover" }}
-                  />
-                )}
-                {/* Video iframe */}
-                {course.video && (
-                  <div className="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-lg mb-3 border border-white/10 z-10">
-                    <iframe
-                      width="100%"
-                      height="215"
-                      src={course.src}
-                      title={course.name || course.title}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                {mode === "Coursera" ? (
+                  course.image && <img src={course.image} alt={course.name} className="w-full h-40 object-cover rounded-xl mb-3 border border-white/10" />
+                ) : (
+                  course.src_link && <div className="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-lg mb-3 border border-white/10 z-10">
+                    <iframe width="100%" height="215" src={course.src_link} title={course.heading} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                   </div>
                 )}
-                {/* Description */}
                 <p className="text-white/80 text-sm mb-4 min-h-[48px] z-10">{course.description || course.desc}</p>
-                {/* Button */}
-                <Button
-                  asChild
-                  className="w-full mt-auto text-lg font-bold py-3 rounded-full shadow-lg bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 focus:ring-2 focus:ring-green-400 focus:ring-offset-2 border-0 z-10"
-                >
-                  <a href={course.url || course.src} target="_blank" rel="noopener noreferrer">
-                    Watch Now
-                  </a>
-                </Button>
-              </motion.div>
+                <div className="flex gap-2">
+                  <Button asChild className="w-full mt-auto text-lg font-bold py-3 rounded-full shadow-lg bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 border-0 z-10">
+                    <a href={course.url || course.src_link} target="_blank" rel="noopener noreferrer">Watch Now</a>
+                  </Button>
+                  {mode === "Youtube" && isAdmin && (
+                    <Button type="button" onClick={() => handleAdminCourseRemove(course.id)} className="bg-red-700 ml-2">Delete</Button>
+                  )}
+                </div>
+              </div>
             ))
           )}
-        </motion.div>
+        </div>
       </div>
       <Footer />
     </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 
 // ✅ Since the image is in the same folder as FinanceHero.jsx
-import firstImage from "./finance-hero.png";
+
 
 
 const FinanceHero = ({ showAdvanced, setShowAdvanced }) => {
@@ -38,11 +38,11 @@ const FinanceHero = ({ showAdvanced, setShowAdvanced }) => {
         className="flex-1 mt-10 md:mt-0 flex justify-center"
       >
         {/* ✅ This now loads your first image */}
-        <img
-          src={firstImage}
+        {/* <img
+         
           alt="Finance Hero"
           className="max-w-md w-full rounded-xl shadow-lg"
-        />
+        /> */}
       </motion.div>
     </section>
   );

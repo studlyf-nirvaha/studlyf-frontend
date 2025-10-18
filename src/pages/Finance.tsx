@@ -73,7 +73,7 @@ const Finance = () => {
               </motion.div>
 
               {/* Smart Filters + Search */}
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
@@ -87,7 +87,7 @@ const Finance = () => {
                   sortBy={sortBy}
                   setSortBy={setSortBy}
                 />
-              </motion.div>
+              </motion.div> */}
 
               {/* Core Learning Cards */}
               <motion.div

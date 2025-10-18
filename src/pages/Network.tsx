@@ -10,7 +10,7 @@ import ChatSidebar from "@/components/network/ChatSidebar";
 import NetworkFilters from "@/components/network/NetworkFilters";
 import ConnectionRequests from "@/components/network/ConnectionRequests";
 import { SplitText } from "@/components/ui/split-text";
-import { MessageSquare, Bell, Filter, Users, UserPlus, Heart, Clock, X, User } from "lucide-react";
+import { MessageSquare, Bell, Filter, Users, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/lib/AuthContext';
@@ -21,11 +21,12 @@ import {
   getConnectionRequests,
   sendConnectionRequest,
   acceptConnectionRequest,
-  rejectConnectionRequest
+  rejectConnectionRequest,
+  ApiService
 } from '@/lib/api';
+import { initSocket, getSocket } from '@/lib/socket';
 import { Helmet } from "react-helmet-async";
 
-// Add a type for user to ensure id is present
 type NetworkUser = {
   _id: string;
   firstName?: string;
@@ -41,20 +42,11 @@ type NetworkUser = {
   interests?: string[];
 };
 
-// Shuffle utility
-function shuffleArray(array: any[]) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+const INITIAL_VISIBLE = 3;
 
 const Network = () => {
   const { user: currentUser } = useAuth();
   const userId = currentUser ? (currentUser as any)?.uid : undefined;
-  // State for user's profile data
   const [profileData, setProfileData] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   useEffect(() => {
@@ -72,7 +64,6 @@ const Network = () => {
         });
     });
   }, [userId]);
-  // Helper: check if profile is complete
   const isProfileComplete = useMemo(() => {
     if (!profileData) return false;
     const { firstName, lastName, college, skills } = profileData;
@@ -90,76 +81,87 @@ const Network = () => {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [connectionRequests, setConnectionRequests] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [connectionView, setConnectionView] = useState('public'); // 'public' or 'connections'
-  // Already declared above
+  const [connectionView, setConnectionView] = useState('public');
   const [users, setUsers] = useState<NetworkUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState(0); // TODO: Replace with real unread count from backend or context
-  const [connections, setConnections] = useState<string[]>([]); // user IDs
-  const [incomingRequests, setIncomingRequests] = useState<any[]>([]); // [{from, to, ...}]
-  const [pendingRequests, setPendingRequests] = useState<string[]>([]); // user IDs to whom I sent requests
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [peerUnreadMap, setPeerUnreadMap] = useState<Record<string, number>>({});
+  const [connections, setConnections] = useState<string[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<string[]>([]);
   const [showConnectionsOnly, setShowConnectionsOnly] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const CARDS_PER_PAGE = 12; // Ensure 12 users per page
+  const [visibleRemaining, setVisibleRemaining] = useState(INITIAL_VISIBLE);
+  const [visibleRecommended, setVisibleRecommended] = useState(INITIAL_VISIBLE);
 
-  // Filter users based on all filter criteria and connectionView
+  useEffect(() => {
+    setVisibleRemaining(INITIAL_VISIBLE);
+    setVisibleRecommended(INITIAL_VISIBLE);
+  }, [users, searchTerm, selectedInterest, selectedSkills, selectedStatuses, showConnectionsOnly, profileData]);
+
   const filteredUsers = useMemo(() => {
-    // Choose base list depending on connectionView
     let baseUsers: NetworkUser[];
-    if (connectionView === 'connections') {
+    if (connectionView === 'connections' || showConnectionsOnly) {
       baseUsers = users.filter(user => connections.includes(user._id));
     } else {
       baseUsers = users.filter(user => user._id !== userId && !connections.includes(user._id));
     }
-    // If no filters/search are active, show all base users
     const noFilters = !searchTerm && selectedInterest === "All Interests" && selectedSkills.length === 0 && selectedStatuses.length === 0;
     if (noFilters) return baseUsers;
     const safe = (val: any) => typeof val === 'string' ? val : '';
     return baseUsers.filter((user: NetworkUser) => {
-      // Search by name (skip if no name)
       const matchesSearch = safe(user.firstName).toLowerCase().includes(searchTerm.toLowerCase());
-      // Filter by interest
       const matchesInterest = selectedInterest === "All Interests" ||
         (user.interests && user.interests.some(interest => interest === selectedInterest));
-      // Filter by skills
       const matchesSkills = selectedSkills.length === 0 ||
         (user.skills && user.skills.some(skill => selectedSkills.includes(skill)));
-      // Filter by connection status
       const matchesStatus = selectedStatuses.length === 0 ||
-        selectedStatuses.includes(user.year); // Assuming 'year' is the status
+        selectedStatuses.includes(user.year);
       return matchesSearch && matchesInterest && matchesSkills && matchesStatus;
     });
-  }, [users, searchTerm, selectedInterest, selectedSkills, selectedStatuses, connectionView, connections, userId]);
+  }, [users, searchTerm, selectedInterest, selectedSkills, selectedStatuses, connectionView, showConnectionsOnly, connections, userId]);
 
-  // Pagination logic (must come after filteredUsers is defined)
-  const currentList = useMemo(() => {
+  const baseUsers = useMemo(() => {
     const base = showConnectionsOnly
       ? users.filter(u => connections.includes(u._id))
       : filteredUsers;
-    return shuffleArray(base); // Shuffle the cards for randomness
+    return base.filter((user: NetworkUser) => Boolean(user.firstName && user.skills && user.skills.length > 0 && user.college));
   }, [users, filteredUsers, showConnectionsOnly, connections]);
 
-  const validUsers = currentList.filter((user: NetworkUser) => {
-    // Only show users who have filled firstName, skills, and college
-    return Boolean(user.firstName && user.skills && user.skills.length > 0 && user.college);
-  });
-  const totalPages = Math.max(1, Math.ceil(validUsers.length / CARDS_PER_PAGE)); // Only count valid users for pagination
-  // validUsers already declared above
-  const paginatedUsers = validUsers.slice(
-    (currentPage - 1) * CARDS_PER_PAGE,
-    currentPage * CARDS_PER_PAGE
-  );
+  const { recommendedUsers, remainingUsers } = useMemo(() => {
+    const currentCollege = (profileData?.college || '').trim().toLowerCase();
+    const mySkills: string[] = Array.isArray(profileData?.skills) ? (profileData.skills as string[]) : [];
+    const mySkillSet = new Set(mySkills.map(s => (s || '').toLowerCase()));
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages); // Adjust current page if it exceeds total pages
+    const sameCollege: NetworkUser[] = [];
+    const sameSkillsAtLeastTwo: NetworkUser[] = [];
+    const seen = new Set<string>();
+
+    for (const u of baseUsers) {
+      const uid = u._id;
+      if (!uid) continue;
+      const uCollege = (u.college || '').trim().toLowerCase();
+      const uSkills: string[] = Array.isArray(u.skills) ? u.skills : [];
+      const overlap = uSkills.reduce((acc, s) => acc + (mySkillSet.has((s || '').toLowerCase()) ? 1 : 0), 0);
+
+      if (currentCollege && uCollege === currentCollege) {
+        sameCollege.push(u);
+        seen.add(uid);
+        continue;
+      }
+
+      if (mySkillSet.size > 0 && overlap >= 2) {
+        sameSkillsAtLeastTwo.push(u);
+        seen.add(uid);
+      }
     }
-  }, [totalPages, currentPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [showConnectionsOnly, filteredUsers]);
+    const remaining = baseUsers.filter(u => !seen.has(u._id));
+    return {
+      recommendedUsers: [...sameCollege, ...sameSkillsAtLeastTwo],
+      remainingUsers: remaining,
+    };
+  }, [baseUsers, profileData]);
 
   useEffect(() => {
     setLoadingUsers(true);
@@ -189,7 +191,6 @@ const Network = () => {
       });
   }, []);
 
-  // Fetch connections and requests
   useEffect(() => {
     if (!userId) return;
 
@@ -207,11 +208,57 @@ const Network = () => {
       .catch(() => { });
   }, [userId]);
 
-  // TODO: Implement real-time message notifications
   useEffect(() => {
     if (!userId) return;
-    // For now, set a placeholder unread count
-    setUnreadMessages(0);
+    const apiBase = (ApiService as any).getBaseUrl ? (ApiService as any).getBaseUrl() : (
+      (import.meta as any).env?.VITE_API_BASE_URL
+        ? (import.meta as any).env.VITE_API_BASE_URL
+        : ((import.meta as any).env?.PROD ? 'https://studlyf.in' : 'http://localhost:3000')
+    );
+    const socket = initSocket(apiBase, userId);
+
+    ApiService.getUnreadCounts(userId).then((counts) => {
+      setPeerUnreadMap(counts || {});
+      const peersWithUnread = Object.values(counts || {}).filter((v: number) => (v || 0) > 0).length;
+      setUnreadMessages(peersWithUnread);
+    }).catch(() => {});
+
+    const onNewMessage = (msg: any) => {
+      if (msg && msg.to === userId && msg.from) {
+        setPeerUnreadMap(prev => {
+          const next = { ...prev, [msg.from]: (prev[msg.from] || 0) + 1 } as Record<string, number>;
+          const peersWithUnread = Object.values(next).filter((v) => (v || 0) > 0).length;
+          setUnreadMessages(peersWithUnread);
+          return next;
+        });
+      }
+    };
+    const onRead = (payload: any) => {
+      const peer = payload?.peer;
+      const by = payload?.by;
+      if (!peer || !by) return;
+      if (by === userId) {
+        setPeerUnreadMap(prev => {
+          if (!prev[peer]) return prev;
+          const next: Record<string, number> = { ...prev };
+          delete next[peer];
+          const peersWithUnread = Object.values(next).filter((v) => (v || 0) > 0).length;
+          setUnreadMessages(peersWithUnread);
+          return next;
+        });
+      }
+    };
+
+    socket.on('message:new', onNewMessage);
+    socket.on('message:read', onRead);
+
+    return () => {
+      const s = getSocket();
+      if (s) {
+        s.off('message:new', onNewMessage);
+        s.off('message:read', onRead);
+      }
+    };
   }, [userId]);
 
   const handleMessageClick = (user) => {
@@ -224,9 +271,6 @@ const Network = () => {
     setSelectedUser(null);
   };
 
-  // Remove unused handleConnectClick, use inline logic with userId where needed
-
-  // Update the logic for accepting a connection request to update the connections state
   const handleAcceptRequest = (fromUserId: string) => {
     if (!userId) return;
     acceptConnectionRequest(fromUserId, userId)
@@ -257,55 +301,9 @@ const Network = () => {
     setSelectedStatuses([]);
   };
 
-  // Filter users based on connectionView
-  const displayedUsers = connectionView === 'connections'
-    ? users.filter(user => connections.includes(user._id))
-    : users.filter(user => user._id !== userId && !connections.includes(user._id));
-
-  // Freeze background scroll when chat sidebar is open
-  useEffect(() => {
-    if (isChatSidebarOpen) {
-      // Prevent scroll and fix body position
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.width = '100vw';
-      document.body.style.overflow = 'hidden';
-    } else {
-      // Restore scroll and body position
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      if (scrollY) {
-        window.scrollTo(0, -parseInt(scrollY || '0'));
-      }
-    }
-    return () => {
-      // Cleanup on unmount
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-      if (scrollY) {
-        window.scrollTo(0, -parseInt(scrollY || '0'));
-      }
-    };
-  }, [isChatSidebarOpen]);
-
-  // Connection status helper
   const getConnectionStatus = useCallback((userId: string) => {
     if (connections.includes(userId)) return 'connected';
     if (pendingRequests.includes(userId)) return 'pending';
-    // If incoming request, treat as 'none' for card button (handled elsewhere)
     return 'none';
   }, [connections, pendingRequests]);
 
@@ -323,9 +321,6 @@ const Network = () => {
   const handleConnectionsClick = () => {
     setShowConnectionsOnly(prev => !prev);
   };
-  const handleShowPublicClick = () => {
-    setShowConnectionsOnly(false);
-  };
 
   const handleChatButtonClick = () => {
     setIsChatListOpen(true);
@@ -333,7 +328,7 @@ const Network = () => {
 
   const handleChatUserSelect = (user: NetworkUser) => {
     setSelectedChatUser({
-      id: Number(user._id),
+      id: String(user._id),
       name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : `${user.firstName || ''}`.trim(),
       profilePicture: user.profilePicture,
       isOnline: user.isOnline || false,
@@ -347,13 +342,47 @@ const Network = () => {
     setSelectedChatUser(null);
   };
 
+  useEffect(() => {
+    if (isChatSidebarOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100vw';
+      document.body.style.overflow = 'hidden';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, -parseInt(scrollY || '0'));
+      }
+    }
+    return () => {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      if (scrollY) {
+        window.scrollTo(0, -parseInt(scrollY || '0'));
+      }
+    };
+  }, [isChatSidebarOpen]);
+
   return (
     <>
       <Helmet>
         <title>Network | StudLyF – Connect with Peers</title>
         <meta name="description" content="Expand your professional and social network. Connect with students, mentors, and industry experts on StudLyF." />
       </Helmet>
-      {/* Contextual internal links for SEO */}
       <div className="seo-links" style={{ display: 'none' }}>
         <a href="/finance">Finance</a>
         <a href="/events">Events</a>
@@ -361,7 +390,6 @@ const Network = () => {
         <a href="/startups">Startups</a>
       </div>
       <div className={`min-h-screen bg-black text-white overflow-x-hidden${isChatSidebarOpen ? ' pointer-events-none' : ''}`}>
-        {/* Profile completion restriction overlay */}
         {!isProfileComplete && !profileLoading && (
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-lg bg-black/60">
             <div className="rounded-xl shadow-lg p-4 flex flex-col items-center" style={{ background: 'none' }}>
@@ -372,14 +400,12 @@ const Network = () => {
             </div>
           </div>
         )}
-        {/* Overlay for blur and freeze when chat sidebar is open */}
         {isChatSidebarOpen && (
           <div
             className="fixed inset-0 z-40 backdrop-blur-md bg-black/30 transition-all duration-300"
             aria-hidden="true"
           />
         )}
-        {/* Animated background */}
         <div className="fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute inset-0 bg-grid-white/[0.02] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-purple/20 to-transparent" />
@@ -390,14 +416,12 @@ const Network = () => {
 
         <Navbar />
 
-        {/* Chat Modal for messaging */}
         <ChatModal
           isOpen={isChatOpen}
           onClose={handleCloseChatModal}
           user={selectedUser}
         />
 
-        {/* Floating Chat Sidebar below Navbar */}
         <div className="fixed top-[80px] sm:top-[120px] left-0 z-50 w-full flex justify-center" style={{ height: '0', pointerEvents: 'none' }}>
           <div className={`relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl ${isChatSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
             <ChatSidebar isOpen={isChatSidebarOpen} onClose={toggleChatSidebar} />
@@ -406,7 +430,6 @@ const Network = () => {
 
         <main className={`relative z-10 pt-16 sm:pt-20 lg:pt-28${!isProfileComplete ? ' pointer-events-none blur-sm select-none' : ''}`}>
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -432,7 +455,7 @@ const Network = () => {
               >
                 <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
                 {unreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] sm:text-xs rounded-full min-w-[16px] h-4 sm:h-5 px-1 flex items-center justify-center ring-2 ring-black">
                     {unreadMessages}
                   </span>
                 )}
@@ -440,9 +463,7 @@ const Network = () => {
             </motion.div>
 
             <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 sm:gap-6 lg:gap-8 items-start">
-              {/* Sidebar: Filters & Connection Requests */}
               <aside className="sticky top-20 sm:top-28 self-start z-10 w-full flex flex-col gap-4 sm:gap-6 order-2 xl:order-1">
-                {/* Network Stats */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div
                     className={`bg-white/5 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 border text-center flex flex-col items-center justify-center cursor-pointer transition-colors
@@ -466,17 +487,13 @@ const Network = () => {
                     <div className="text-xs text-white/70 mt-1">Requests</div>
                   </div>
                 </div>
-
-                {/* Connection Requests */}
                 <ConnectionRequests
                   requests={incomingRequests.map(r => {
                     const fromUser = users.find(u => u._id === r.from) as Partial<NetworkUser & { connections?: string[] }> || {};
-                    // Calculate mutual connections
                     const fromUserConnections = fromUser?.connections || [];
                     const mutualConnections = Array.isArray(fromUserConnections) && Array.isArray(connections)
                       ? fromUserConnections.filter((id: string) => connections.includes(id)).length
                       : 0;
-                    // Calculate timeAgo (if r.createdAt exists)
                     let timeAgo = '';
                     if (r.createdAt) {
                       const created = new Date(r.createdAt);
@@ -501,8 +518,6 @@ const Network = () => {
                   onAccept={handleAcceptRequest}
                   onDecline={handleDeclineRequest}
                 />
-
-                {/* Filters Card */}
                 <div className="sticky top-6 h-fit w-full p-3 sm:p-4 space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl shadow-xl backdrop-blur-lg bg-white/10 border border-white/10">
                   <div className="flex items-center justify-between mb-2 flex-col sm:flex-row gap-2 sm:gap-0">
                     <div className="font-semibold text-base sm:text-lg text-white flex items-center gap-2 order-2 sm:order-1">
@@ -523,8 +538,6 @@ const Network = () => {
                   />
                 </div>
               </aside>
-
-              {/* Main Content: User Cards */}
               <section className="order-1 xl:order-2">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 order-2 sm:order-1">
@@ -544,7 +557,7 @@ const Network = () => {
                     >
                       <MessageSquare className="w-5 h-5" />
                       {unreadMessages > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center ring-2 ring-black">
                           {unreadMessages}
                         </span>
                       )}
@@ -562,45 +575,117 @@ const Network = () => {
                 {loadingUsers && <div className="text-white/60 text-center py-8">Loading users...</div>}
                 {userError && <div className="text-red-400 text-center py-8">{userError}</div>}
                 {viewMode === 'grid' ? (
-                  (paginatedUsers.length === 0 ? (
+                  (baseUsers.length === 0 ? (
                     <div className="text-center text-white/70 py-12 text-lg">
                       Only users who have filled their First Name, Skills, and College will be visible here.<br />
                       Please complete your profile to appear in the network.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-16">
-                      {paginatedUsers.map((user: NetworkUser, index) => (
-                        <motion.div
-                          key={user._id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.6, delay: index * 0.1 }}
-                        >
-                          <UserProfileCard
-                            user={{
-                              id: user._id,
-                              name: `${user.firstName} ${user.lastName || ''}`.trim(),
-                              profilePicture: user.profilePicture || '',
-                              college: user.college,
-                              year: user.year,
-                              branch: user.branch,
-                              skills: user.skills,
-                              bio: user.bio,
-                              isOnline: user.isOnline,
-                              gender: user.gender,
-                              firstName: user.firstName,
-                              lastName: user.lastName,
-                            }}
-                            getConnectionStatus={getConnectionStatus}
-                            onConnect={handleConnect}
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
+                    <>
+                      <div className="mb-6 sm:mb-8">
+                        <div className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">General Profiles</div>
+                        {recommendedUsers.length === 0 ? (
+                          <div className="text-white/50 text-sm">No recommendations based on your college or skills.</div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                              {recommendedUsers.slice(0, visibleRecommended).map((user: NetworkUser, index) => (
+                                <motion.div
+                                  key={user._id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.6, delay: index * 0.05 }}
+                                >
+                                  <UserProfileCard
+                                    user={{
+                                      id: user._id,
+                                      name: `${user.firstName} ${user.lastName || ''}`.trim(),
+                                      profilePicture: user.profilePicture || '',
+                                      college: user.college,
+                                      year: user.year,
+                                      branch: user.branch,
+                                      skills: user.skills,
+                                      bio: user.bio,
+                                      isOnline: user.isOnline,
+                                      gender: user.gender,
+                                      firstName: user.firstName,
+                                      lastName: user.lastName,
+                                    }}
+                                    getConnectionStatus={getConnectionStatus}
+                                    onConnect={handleConnect}
+                                    unreadCount={peerUnreadMap[user._id] || 0}
+                                  />
+                                </motion.div>
+                              ))}
+                            </div>
+                            {visibleRecommended < recommendedUsers.length && (
+                              <div className="flex justify-center mt-4">
+                                <Button
+                                  onClick={() => setVisibleRecommended(v => Math.min(v + INITIAL_VISIBLE, recommendedUsers.length))}
+                                  className="bg-brand-purple/80 hover:bg-brand-purple text-white rounded-full px-6 py-2 shadow"
+                                >
+                                  Show More
+                                </Button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      {/* All Remaining Profiles Section */}
+                      <div className="mt-6 sm:mt-8">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                          <div className="text-base sm:text-lg font-semibold text-white">
+                           
+                          </div>
+                          {visibleRemaining < remainingUsers.length && (
+                            <Button
+                              onClick={() => setVisibleRemaining(v => Math.min(v + INITIAL_VISIBLE, remainingUsers.length))}
+                              className="bg-brand-purple/80 hover:bg-brand-purple text-white rounded-full px-6 py-2 shadow"
+                            >
+                              Show More
+                            </Button>
+                          )}
+                        </div>
+                        {remainingUsers.length === 0 ? (
+                          <div className="text-white/50 text-sm">No more profiles to show.</div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-16">
+                            {remainingUsers.slice(0, visibleRemaining).map((user: NetworkUser, index) => (
+                              <motion.div
+                                key={user._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: index * 0.05 }}
+                              >
+                                <UserProfileCard
+                                  user={{
+                                    id: user._id,
+                                    name: `${user.firstName} ${user.lastName || ''}`.trim(),
+                                    profilePicture: user.profilePicture || '',
+                                    college: user.college,
+                                    year: user.year,
+                                    branch: user.branch,
+                                    skills: user.skills,
+                                    bio: user.bio,
+                                    isOnline: user.isOnline,
+                                    gender: user.gender,
+                                    firstName: user.firstName,
+                                    lastName: user.lastName,
+                                  }}
+                                  getConnectionStatus={getConnectionStatus}
+                                  onConnect={handleConnect}
+                                  unreadCount={peerUnreadMap[user._id] || 0}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
                   ))
                 ) : (
                   <div className="flex flex-col gap-3 sm:gap-4 mb-8 sm:mb-16">
-                    {paginatedUsers.map((user: NetworkUser, index) => (
+                    {[...recommendedUsers, ...remainingUsers].map((user: NetworkUser, index) => (
                       <motion.div
                         key={user._id}
                         initial={{ opacity: 0, y: 20 }}
@@ -627,52 +712,18 @@ const Network = () => {
                     ))}
                   </div>
                 )}
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-1 sm:gap-2 mt-4 mb-8">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="px-2 sm:px-3 py-1 rounded bg-brand-purple/20 text-brand-purple disabled:opacity-50 text-sm"
-                    >
-                      Previous
-                    </button>
-                    {[...Array(totalPages)].map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`px-2 sm:px-3 py-1 rounded text-sm ${currentPage === i + 1 ? 'bg-brand-purple text-white' : 'bg-white/10 text-brand-purple'}`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-2 sm:px-3 py-1 rounded bg-brand-purple/20 text-brand-purple disabled:opacity-50 text-sm"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
               </section>
             </div>
           </div>
         </main>
-
         <Footer />
-
-        {/* Chat Sidebar (for desktop) */}
         <ChatSidebar
           isOpen={isChatSidebarOpen}
           onClose={() => setIsChatSidebarOpen(false)}
         />
-
-        {/* Chat List Modal */}
         {isChatListOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-black border border-purple-900 shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col rounded-xl sm:rounded-2xl overflow-hidden">
-              {/* Header */}
               <div className="flex items-center justify-between px-3 sm:px-4 py-3 bg-black border-b border-purple-900">
                 <div className="text-white text-base sm:text-lg font-semibold">Chats</div>
                 <button
@@ -682,7 +733,6 @@ const Network = () => {
                   <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
-              {/* Chat List */}
               <div className="flex-1 overflow-y-auto bg-black">
                 {connections.length === 0 ? (
                   <div className="text-purple-300 text-center py-8 text-sm sm:text-base">No connections to chat with</div>
@@ -716,8 +766,6 @@ const Network = () => {
             </div>
           </div>
         )}
-
-        {/* Chat Modal */}
         {selectedChatUser && (
           <ChatModal
             isOpen={isChatOpen}
